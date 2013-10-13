@@ -1,0 +1,27 @@
+<html>
+    <head>
+        <script type="text/javascript">
+            var ws = new WebSocket( 'ws://' + window.location.host + '/api/', [ 'api' ] );
+            
+            ws.onopen = function() {
+                console.log( "Opened!" );
+            }
+            
+            ws.onclose= function() {
+                console.log( "Closed!" );
+            }
+            
+            ws.onerror = function( error ) {
+                console.log( "Error: " + error );
+            }
+            
+            ws.onmessage = function( e ) {
+                console.log( "Server: ", e.data );
+            }
+            
+        </script>
+    </head>
+    <body>
+        API
+    </body>
+</html>

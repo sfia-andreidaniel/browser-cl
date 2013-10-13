@@ -17,7 +17,7 @@ if ( !cluster.isMaster ) {
         wsInterface = require( __dirname + '/../lib/websocket-interface.js' ).WebsocketInterface;
 
     exports.upgrade = function( httpserver ) {
-        new wsInterface( controller, httpserver, dataDir );
+        new wsInterface( controller, httpserver, dataDir, [ '/api/' ] );
     }
 
     // Tells the server that we're upgrading it, but that we
