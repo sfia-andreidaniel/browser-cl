@@ -1,4 +1,4 @@
-Storage events:
+<h1>Storage events:</h1>
 
 Event            : "disk-stats"
 Event.Args       : {}
