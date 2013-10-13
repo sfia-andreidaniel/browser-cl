@@ -9,6 +9,7 @@ var cluster               = require('cluster'),
     sockutils             = require(__dirname + '/lib/socket-utils.js'),
     rewriteRules          = [],
     connectionUpgradeFunc = null,
+    connectionUpgradeSymbiosis = null,
     controller            = null,
     listen                = require(__dirname + '/lib/argv-utils.js' ).listen;
 
@@ -105,6 +106,14 @@ if ( cluster.isMaster ) {
                                     throw "Loading module: Cannot use more than 1 server upgrade module!";
                                 
                                 connectionUpgradeFunc = mod.upgrade;
+
+                                if ( mod.symbiosis ) {
+                            
+                                    console.log( "Module " + conf.modules[i] + " upgraded server in symbiosis mode" );
+                                    connectionUpgradeSymbiosis = true;
+                            
+                                }
+                        
                             } else {
                                 throw "Loading module: Attempted to load a server upgrade module, but a .upgrade function is not defined in the module!";
                             }
@@ -142,7 +151,7 @@ if ( cluster.isMaster ) {
     var serverHandlerFunc = function( request, response ) {
         /* Test if the response is originating from a legitimate source */
     
-        if ( connectionUpgradeFunc !== null ) {
+        if ( connectionUpgradeFunc !== null && !connectionUpgradeSymbiosis ) {
             response.writeHead( 404 );
             response.end();
         }

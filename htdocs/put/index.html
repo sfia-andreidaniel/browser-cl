@@ -1,0 +1,39 @@
+<html>
+    <head>
+        <script type="text/javascript">
+            var ws = new WebSocket( 'ws://' + window.location.host + '/put/', [ 'file' ] );
+            
+            ws.onopen = function() {
+                console.log( "Opened!" );
+            }
+            
+            ws.onclose= function() {
+                console.log( "Closed!" );
+            }
+            
+            ws.onerror = function( error ) {
+                console.log( "Error: " + error );
+            }
+            
+            ws.onmessage = function( e ) {
+                console.log( "Server: ", e.data );
+            }
+            
+            var strtoblob = function( str ) {
+                var ord = [];
+                for ( var i=0, len=str.length; i<len; i++ ) {
+                    ord.push( str.charCodeAt( i ) );
+                }
+                var arr = new Uint8Array( ord.length );
+                for ( var i=0, len=ord.length; i<len; i++ )
+                    arr[i] = ord[i];
+                
+                return arr;
+            }
+            
+        </script>
+    </head>
+    <body>
+        PUT
+    </body>
+</html>

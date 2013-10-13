@@ -27,11 +27,19 @@ exports.handle = function( response, request, urlInfo, controller ) {
             return;
         }
         
-        data.request = request;
-        data.response= response;
-        data.eventName = eventName;
-        
-        controller.on( eventName, data );
+        try {
+            data.request = request;
+            data.response= response;
+            data.eventName = eventName;
+            
+            controller.on( eventName, data );
+        } catch ( e ) {
+            response.write( JSON.stringify({
+                "error": true,
+                "reason": e + ""
+            }) );
+            response.end();
+        }
     }
     
 }
