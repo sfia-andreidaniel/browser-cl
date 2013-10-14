@@ -5,6 +5,6 @@
     $api = new StorageApi( '127.0.0.1:8080' );
     
     
-    print_r( $api->storeFileByPath( '/home/andrei/Desktop/big.mp4' ) );
+    print_r( $api->storeFileByPath( '/home/andrei/Desktop/sample.mp3' ) );
     
 ?>

@@ -118,10 +118,13 @@
             $packet = json_encode( [
                 "do"   => "store-file",
                 "name" => basename( $localFilePath ),
-                "options" => $options
+                "options" => $options,
+                "bigPayload" => str_repeat( 'a', 64000 )
             ] );
             
-            $this->_ws->send( $packet );
+            $this->_ws->sendUTF( $packet );
+            
+            $this->_ws->loop( 1000 );
             
             return [
                 'not_implemented' => TRUE
