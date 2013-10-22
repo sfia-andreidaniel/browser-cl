@@ -149,6 +149,8 @@ class WebSocket implements WebSocketObserver
             $this->_connection = new WebSocketConnectionHixie($s, $headers, $buffer);
 
         $s->setConnection($this->_connection);
+        
+        stream_set_timeout( $this->socket, 0, 10 );
 
         return true;
     }
@@ -226,10 +228,11 @@ class WebSocket implements WebSocketObserver
      */
     public function readFrame()
     {
-        $buffer = fread($this->socket, 8192);
 
+        $buffer = @fread($this->socket, 8192);
+        
         $this->_frames = array_merge($this->_frames, $this->_connection->readFrame($buffer));
-
+    
         return array_shift($this->_frames);
     }
 
@@ -239,12 +242,18 @@ class WebSocket implements WebSocketObserver
          * @var WebSocketFrame
          */
         $frame = null;
-        $this->sendFrame(WebSocketFrame::create(WebSocketOpcode::CloseFrame));
-
+        
+        try {
+            $this->sendFrame(WebSocketFrame::create(WebSocketOpcode::CloseFrame));
+        } catch ( Exception $e ) {}
+        
         $i = 0;
+        
         do {
             $i++;
+            try {
             $frame = @$this->readFrame();
+            } catch ( Exception $e ) {}
         } while ($i < 2 && $frame && $frame->getType() == WebSocketOpcode::CloseFrame);
 
         @fclose($this->socket);

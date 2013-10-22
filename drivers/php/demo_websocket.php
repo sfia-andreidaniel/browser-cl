@@ -10,6 +10,7 @@
     $now = time();
     
     $client = new WebSocket( "ws://127.0.0.1:8080/api/", "api" );
+    
     $client->open();
     
     for ( $i=0; $i < 100000; $i++ ) {

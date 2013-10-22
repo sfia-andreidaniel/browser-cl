@@ -1,14 +1,13 @@
 <?php
     
-    require_once dirname( __FILE__ ) . "/WebSocketClient.class.php";
+    require_once __DIR__ . '/lib/vendor/phpws/websocket.client.php';
     
     class StorageApi {
         
         protected $_apiPort = 8080;
         protected $_apiHost = 'localhost';
         
-        // Websocket connection to the api
-        protected $_ws = NULL;
+        private $_handle = NULL;
         
         // Events queues
         protected $_events = [];
@@ -26,44 +25,23 @@
                 $this->_apiPort = $matches[2];
             }
             
-            $this->bind( 'log', function( $data ) {
-                echo "LOG: ", json_encode( $data, JSON_PRETTY_PRINT ), "\n";
-            } );
-            
-            $this->log( "Api address: HOST=" . $this->_apiHost . " PORT=" . $this->_apiPort );
-            
-            $this->bind( 'connect', function( $error ) {
-                $this->log( empty( $error ) ? "Connected to api" : "Failed to connect to api: " . $error );
-            } );
-            
-            $this->bind( 'disconnect', function() {
-                $this->log( "Disconnected from api" );
-            } );
-            
-            $this->bind( 'connectionFailed', function() {
-                $this->log( "Connection failed!" );
-            } );
-            
-            $this->_ws = new WebsocketClient( 'ws://' . $this->_apiHost . ':' . $this->_apiPort . '/api/', [ 'api' ] );
-            
             $self = $this;
             
-            $this->_ws->bind( 'connectionError', function() {
-                throw new Exception("Error while connecting to api!" );
+            $this->bind( 'error', function( $reason = NULL ) use (&$self) {
+                $self->closeOpenedFiles();
+                throw new Exception( $reason ? $reason : "Unknown error" );
             } );
             
-            $this->_ws->bind( 'error', function( $reason ) {
-                throw new Exception("Api error: " . ( $reason ? $reason : "Unknown reason" ) );
+            $this->bind( 'success', function( $data = NULL ) use (&$self) {
+                $self->closeOpenedFiles();
             } );
-            
-            $this->_ws->bind( 'disconnect', function() use ( &$self ) {
-                $self->log( "Disconnected from the api!" );
-            } );
-            
-            if ( !$this->_ws->connect() )
-                throw new Exception("Failed to connect to api!");
-            
-            $this->log( "Class initialized" );
+        }
+        
+        public function closeOpenedFiles() {
+            if ( $this->_handle !== NULL && is_resource( $this->_handle ) ) {
+                @fclose( $this->_handle );
+                $this->_handle = NULL;
+            }
         }
         
         /* Binds an event to the Storage Api.
@@ -100,6 +78,14 @@
             $this->on( 'log', $data );
         }
         
+        private function testFrame( $frameData ) {
+            if ( is_array( $frameData ) && isset( $frameData['ok'] ) &&
+                 $frameData['ok'] === FALSE )
+            throw new Exception( isset( $frameData['error'] ) ? $frameData['error'] : "Unknown error!" );
+            
+            return $frameData;
+        }
+        
         /* API FUNCTIONS SPECIFIC FOR THE CLIENTS */
         
         /* Stores a file in the transcoding cloud, and returns the store result 
@@ -108,30 +94,100 @@
         public function storeFileByPath( $localFilePath, $options = NULL ) {
             
             if ( !@file_exists( $localFilePath ) ) {
-                throw new Exception( "Failed to store local file '$localFilePath' to cloud: File does not exists!" );
+                $this->on('error', "Failed to store local file '$localFilePath' to cloud: File does not exists!" );
             }
             
-            $this->log( "Store file: " . $localFilePath );
+            $this->_handle = @fopen( $localFilePath, "r" );
             
-            // Generate a unique-file-name of the file to the api server
+            if ( !is_resource( $this->_handle ) )
+                $this->on('error', "Failed to open local file!" );
             
-            $packet = json_encode( [
-                "do"   => "store-file",
-                "name" => basename( $localFilePath ),
-                "options" => $options,
-                "bigPayload" => str_repeat( 'a', 64000 )
-            ] );
+            $ws = new WebSocket( 'ws://' . $this->_apiHost . ':' . $this->_apiPort . '/api/', 'api' );
             
-            $this->_ws->sendUTF( $packet );
+            $ws->open();
             
-            $this->_ws->loop( 1000 );
+            // Send file packet
             
-            return [
-                'not_implemented' => TRUE
+            $filePacket = [
+                'name' => basename( $localFilePath ),
+                'size' => filesize( $localFilePath )
             ];
             
-            throw new Exception("Store file: " . $localFilePath );
+            $ws->sendMessage( WebSocketMessage::create( json_encode( $filePacket ) ) );
             
+            // Read acknowledge packet
+            
+            $ack = $ws->readMessage();
+            
+            if ( $ack === NULL )
+                $this->on('error', "Failed to ack frame!" );
+            
+            $ack = $this->testFrame( json_decode( $ack->getData(), TRUE ) );
+            
+            if ( !is_array( $ack ) || !isset( $ack['ack'] ) || $ack['ack'] != 1 ||
+                 !isset( $ack['phase'] ) || $ack['phase'] != 'transfer' )
+            $this->on('error', "Failed to transferr file: Error at first acknowledge packet: " . json_encode( $ack ));
+            
+            // echo "Reading from file...\n";
+            
+            // Send file packet data
+            
+            $numRead = 0;
+            
+            $frame = WebSocketMessage::create('');
+            
+            while ( !feof( $this->_handle ) ) {
+                
+                $buffer = @fread( $this->_handle, 45000 );
+                
+                if ( $buffer === FALSE )
+                    $this->on('error', "Failed to read data from file!" );
+                
+                $frame->setData( '"' . base64_encode(  $buffer ) . '"' );
+                $ws->sendMessage( $frame );
+                
+                // Read ack back from client
+                
+                $ack = $ws->readMessage();
+                
+                if ( $ack === NULL )
+                    $this->on('error', "Failed to ack frame!");
+                
+                $ack = $ack->getData();
+                
+                $ack = $this->testFrame( json_decode( $ack, TRUE ) );
+                
+                $numRead += $ack['got'];
+                
+                if ( !isset( $ack['got'] ) || $ack['got'] != strlen( $buffer ) )
+                    $this->on('error', "Transfer error!");
+                
+                echo $numRead, "\n";
+            }
+            
+            fclose( $this->_handle );
+
+            $this->_handle = NULL;
+            
+            // Read final packet
+            
+            echo "reading final packet...\n";
+            
+            $packet = $ws->readMessage();
+            
+            if ( $packet === NULL )
+                throw new Exception("Failed to ack frame!");
+            
+            $packet = $this->testFrame( json_decode( $packet->getData(), TRUE ) );
+            
+            echo "Done\n";
+
+            $ws->close();
+            
+            $this->on("success", TRUE );
+            
+            return $packet;
+
         }
         
     }

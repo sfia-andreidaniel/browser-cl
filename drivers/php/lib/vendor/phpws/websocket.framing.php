@@ -94,6 +94,8 @@ class WebSocketFrame implements IWebSocketFrame {
     protected $maskingKey = 0;
     protected $payloadData = '';
     protected $actualLength = 0;
+    public    static $_chrs = [];
+    public    static $_ords = [];
 
     private function __construct() {
         
@@ -130,10 +132,16 @@ class WebSocketFrame implements IWebSocketFrame {
     }
 
     protected static function rotMask($data, $key, $offset = 0) {
-        $res = '';
-        for ($i = 0; $i < strlen($data); $i++) {
+        $res = $data;
+        
+        $bytes = [];
+        
+        for ( $i=0, $len = strlen( $key ); $i<$len; $i++ )
+            $bytes[] = ord( $key[ $i ] );
+        
+        for ($i = 0, $len = strlen($data); $i<$len; $i++) {
             $j = ($i + $offset) % 4;
-            $res .= chr(ord($data[$i]) ^ ord($key[$j]));
+            $res[$i] = self::$_chrs[ self::$_ords[$data[$i]] ^ $bytes[$j] ];
         }
 
         return $res;
@@ -261,6 +269,11 @@ class WebSocketFrame implements IWebSocketFrame {
         return $this->payloadData;
     }
 
+}
+
+for ( $i=0; $i<256; $i++ ) {
+    WebSocketFrame::$_chrs[] = chr( $i );
+    WebSocketFrame::$_ords[ WebSocketFrame::$_chrs[$i] ] = $i;
 }
 
 class WebSocketFrame76 implements IWebSocketFrame {
