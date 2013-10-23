@@ -1,0 +1,60 @@
+This driver is working with two transfer engines:
+
+    - STORAGE_API_ENGINE_PHP - slow, slow, slow.
+      Use this engine to transfer small files, or only if you cannot
+      install node.js on your machine ( e.g. running on a vhost )
+    
+    - STORAGE_API_ENGINE_NODEJS - EXTREMELY FAST
+    
+
+Driver usage:
+
+<?php
+
+    require_once __DIR__ . "/StorageApi.class.php";
+
+    // Initialize the storage api driver
+    $api = new StorageApi( '127.0.0.1:8080' );
+
+    // If you want to catch the status of the file transfer
+    
+    $api->bind( 'status', function( $status ) {
+
+        echo "# ", $status, "\n";
+
+    } );
+    
+    // Note that by default, an error event is attached
+    // to the storage api class, which throws exception.
+    
+    // If you want to suppress that event, bind an error event
+    // to the $api, where you return FALSE at the end.
+
+    $api->bind( 'error', function( $reason ) {
+        
+        die( "ERROR: $reason\n" );
+        
+        // return FALSE;
+    } );
+    
+    // If you want to catch the progress ( as percent ) of the
+    // file transfer
+    
+    $api->bind( 'progress', function( $number ) {
+        echo $number, "%\n";
+    } );
+    
+    // And now, we can start storing file(s) ...
+    // You need to optionally attach the status, error and progress only
+    // once, and after that, you can run as many commands of the next three ones:
+    
+    // Transfer a file to storage using the best transfer method ( nodejs if available, fallback to php )
+    print_r( $api->storeFileByPath( '/home/andrei/Desktop/sample.mp4' /* , NULL, STORAGE_API_ENGINE_AUTO */ ) );
+
+    // Force transfer type to use only the pure php driver ( NOT RECOMMENDED, READ FILE AT BEGINNING )
+    print_r( $api->storeFileByPath( '/home/andrei/Desktop/sample.mp4', NULL, STORAGE_API_ENGINE_PHP ) );
+    
+    // Force transfer type to use only the pure nodejs driver
+    print_r( $api->storeFileByPath( '/home/andrei/Desktop/sample.mp4', NULL, STORAGE_API_ENGINE_NODEJS ) );
+    
+?>
