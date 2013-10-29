@@ -22,6 +22,6 @@
         echo $number, "%\n";
     } );
     
-    print_r( $api->storeFileByPath( '/home/andrei/Desktop/sample.mp4', [], STORAGE_API_ENGINE_NODEJS ) );
+    print_r( $api->storeFileByPath( '../../samplefiles/file.mpg', [], STORAGE_API_ENGINE_AUTO ) );
     
 ?>

@@ -86,6 +86,7 @@
         private function testFrame( $frameData ) {
             if ( is_array( $frameData ) && isset( $frameData['ok'] ) &&
                  $frameData['ok'] === FALSE )
+
             throw new Exception( isset( $frameData['error'] ) ? $frameData['error'] : "Unknown error!" );
             
             return $frameData;
