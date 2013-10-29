@@ -1,3 +1,7 @@
+CREATE DATABASE transcoder;
+
+USE transcoder;
+
 -- MySQL dump 10.13  Distrib 5.5.34, for debian-linux-gnu (i686)
 --
 -- Host: localhost    Database: transcoder

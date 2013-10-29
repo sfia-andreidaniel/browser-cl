@@ -41,6 +41,9 @@
             
             $this->bind( 'error', function( $reason = NULL ) use (&$self) {
                 $self->closeOpenedFiles();
+                
+                // var_dump( debug_backtrace() );
+                
                 throw new Exception( $reason ? $reason : "Unknown error" );
             } );
             
@@ -87,7 +90,7 @@
             if ( is_array( $frameData ) && isset( $frameData['ok'] ) &&
                  $frameData['ok'] === FALSE )
 
-            throw new Exception( isset( $frameData['error'] ) ? $frameData['error'] : "Unknown error!" );
+            throw new Exception( ( isset( $frameData['reason'] ) && isset( $frameData['error'] ) ) ? $frameData['reason'] : "Unknown error!" );
             
             return $frameData;
         }
