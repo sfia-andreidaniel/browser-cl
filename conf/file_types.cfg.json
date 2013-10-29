@@ -1,0 +1,80 @@
+{
+    "image/jpeg"     : {
+        "type"      : "image",
+        "extension" : "jpg",
+        "mime"      : "image/jpeg",
+        "parser"    : "ImageParser"
+    },
+
+    "image/gif"      : {
+        "type"      : "image",
+        "extension" : "gif",
+        "mime"      : "image/gif",
+        "parser"    : "ImageParser"
+    },
+
+    "image/png"      : {
+        "type"      : "image",
+        "extension" : "png",
+        "mime"      : "image/png",
+        "parser"    : "ImageParser"
+    },
+
+
+
+    "application/ogg": {
+        "type"      : "video",
+        "extension" : "ogv",
+        "mime"      : "application/ogg",
+        "parser"    : "VideoParser"
+    },
+
+    "video/x-msvideo": {
+        "type"      : "video",
+        "extension" : "avi",
+        "mime"      : "video/x-msvideo",
+        "parser"    : "VideoParser"
+    },
+
+    "video/x-flv"    : {
+        "type"      : "video",
+        "extension" : "flv",
+        "mime"      : "video/x-flv",
+        "parser"    : "VideoParser"
+    },
+
+    "video/mp4"      : {
+        "type"      : "video",
+        "extension" : "mp4",
+        "mime"      : "video/mp4",
+        "parser"    : "VideoParser"
+    },
+
+    "video/mpeg"     : {
+        "type"      : "video",
+        "extension" : "mpg",
+        "mime"      : "video/mpeg",
+        "parser"    : "VideoParser"
+    },
+
+    "video/webm"     : {
+        "type"      : "video",
+        "extension" : "webm",
+        "mime"      : "video/webm",
+        "parser"    : "VideoParser"
+    },
+
+
+
+    "audio/x-wav"    : {
+        "type"      : "audio",
+        "extension" : "wav",
+        "mime"      : "audio/x-wav"
+    },
+
+    "audio/mpeg"     : {
+        "type"      : "audio",
+        "extension" : "mp3",
+        "mime"      : "audio/mpeg"
+    }
+}

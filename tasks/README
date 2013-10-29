@@ -1,0 +1,14 @@
+In this folder we store the detectors for video / audio / image formats.
+
+A detector has an two input params:
+
+    a filetype info
+    a parser info
+
+A detector returns FALSE || NULL if it cannot handle the file
+based on its file info and parser info, and a 
+
+{
+    "extension": "extension_to_be_added",
+    "converter": "converter_name"
+}
