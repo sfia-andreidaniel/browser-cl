@@ -1,5 +1,5 @@
 #!/bin/sh
-node main.js \
+nodejs main.js \
      -port 8080 \
      -module api \
-     -data-dir /srv/jsplatform/classes/transcoder/transcoder/htdocs/.api
+     -data-dir /srv/www/websites/transcoder/htdocs/.api
