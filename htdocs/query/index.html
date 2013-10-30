@@ -1,0 +1,80 @@
+<html>
+<head>
+    <style>
+        label {
+            display: block;
+        }
+        
+        label > span {
+            
+            font-weight: bold;
+            display: inline-block;
+            width: 100px;
+            vertical-align: top;
+        }
+        
+        label > input[type=number] {
+            width: 60px;
+        }
+        
+        * { font-family: Arial }
+        
+        details { margin-bottom: 20px; }
+        
+    </style>
+</head>
+<body>
+    <h1>Cloud query interface</h1>
+    <p>You can send a query to the cloud by using a MongoDB like query:</p>
+    <form method="get">
+    
+        <label>
+            <span>Query:</span>
+            <textarea name="q" style="width: 500px; height: 200px">{"state": "new"}</textarea>
+        </label>
+        <details>
+            <summary>Query help</summary>
+            <p>You can use the following fields in your query</p>
+            <ul>
+                <li><b>uploadId</b> int</li>
+                <li><b>uploadDate</b> int</li>
+                <li><b>uploadIp</b> string</li>
+                <li><b>storagePath</b> string</li>
+                <li><b>storageFile</b> string</li>
+                <li><b>storageHttp</b> string</li>
+                <li><b>storageAddress</b> string</li>
+                <li><b>jobsCompleted</b> int</li>
+                <li><b>jobsErrors</b> int</li>
+                <li><b>jobsSuccess</b> int</li>
+                <li><b>jobsTotal</b> int</li>
+                <li><b>fileSize</b> int</li>
+                <li><b>storageSize</b> int</li>
+                <li><b>mimeType</b> string</li>
+
+                <li><b>taskId</b> int</li>
+                <li><b>taskStatus</b> string</li>
+                <li><b>taskType</b> string</li>
+                <li><b>taskPreset</b> string</li>
+                <li><b>taskSize</b> int</li>
+                <li><b>taskExtension</b> string</li>
+                <li><b>taskPriority</b> int</li>
+                <li><b>taskStartDate</b> int</li>
+                <li><b>taskEndedDate</b> int</li>
+            </ul>
+        </details>
+    
+        <label>
+            <span>Skip:</span>
+            <input type="number" name="skip" value="0" min="0" />
+        </label>
+        <label>
+            <span>Limit:</span>
+            <input type="number" name="limit" value="10" min="0" max="1000" />
+        </label>
+        
+        <input type="submit" value="Search" />
+    
+    </form>
+    
+</body>
+</html>

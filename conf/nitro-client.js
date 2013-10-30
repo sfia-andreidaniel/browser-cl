@@ -1,4 +1,5 @@
-var arg_utils = require(__dirname + '/../lib/argv-utils.js');
+var arg_utils = require(__dirname + '/../lib/argv-utils.js'),
+    fs        = require( 'fs' );
 
 /* The listening port of the web-server */
 exports.port = arg_utils.port || 8081;
@@ -8,11 +9,21 @@ exports.documentRoot = exports.docroot || './htdocs';
 
 /* Enter ip address or class notation in format
    ip/mask where mask is of type [1..32] */
-exports.allowFrom = [
-    '127.0.0.0/8',
-    '188.0.0.0/8',
-    '86.127.139.0/24'
-];
+
+try {
+
+    var firewall;
+
+    exports.allowFrom = firewall = JSON.parse( fs.readFileSync( __dirname + '/firewall.json' ) );
+
+    if ( !( firewall instanceof Array ) )
+        throw "The firewall configuration was expected to be interpreted as an Array of String";
+
+} catch ( error ) {
+    
+    throw "Failed to initialize firewall: " + error;
+    
+}
 
 /* The pid file name */
 exports.pidFile = "/var/run/nitro-client.pid";

@@ -1,78 +1,41 @@
+DROP DATABASE IF EXISTS transcoder;
+
 CREATE DATABASE transcoder;
 
 USE transcoder;
 
--- MySQL dump 10.13  Distrib 5.5.34, for debian-linux-gnu (i686)
---
--- Host: localhost    Database: transcoder
--- ------------------------------------------------------
--- Server version	5.5.34-0ubuntu0.12.04.1
+DELIMITER ;
 
-/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
-/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
-/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
-/*!40101 SET NAMES utf8 */;
-/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
-/*!40103 SET TIME_ZONE='+00:00' */;
-/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
-/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
-/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
-/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
-
---
--- Table structure for table `uploads`
---
-
-DROP TABLE IF EXISTS `uploads`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `uploads` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `storage_address` char(64) NOT NULL DEFAULT '',
-  `storage_path` char(255) NOT NULL DEFAULT '',
-  `storage_file` char(255) NOT NULL DEFAULT '',
-  `storage_http` char(64) NOT NULL DEFAULT '',
-  `upload_date` bigint(20) NOT NULL DEFAULT '0',
-  `upload_ip` char(15) NOT NULL DEFAULT '0.0.0.0',
-  `jobs_completed` int(11) NOT NULL DEFAULT '0',
-  `jobs_errors` int(11) NOT NULL DEFAULT '0',
-  `jobs_success` int(11) NOT NULL DEFAULT '0',
-  `jobs_total` int(11) NOT NULL DEFAULT '0',
-  `file_size` bigint(20) NOT NULL DEFAULT '0',
-  `total_size` bigint(20) NOT NULL DEFAULT '0',
-  `mime` char(32) NOT NULL DEFAULT 'application/octet-stream',
-  `upload_filename` char(255) NOT NULL DEFAULT '',
+  `id`                  bigint(20)      NOT NULL AUTO_INCREMENT,
+  `storage_address`     char(64)        NOT NULL DEFAULT '',
+  `storage_path`        char(255)       NOT NULL DEFAULT '',
+  `storage_file`        char(255)       NOT NULL DEFAULT '',
+  `storage_http`        char(64)        NOT NULL DEFAULT '',
+  `upload_date`         bigint(20)      NOT NULL DEFAULT '0',
+  `upload_ip`           char(15)        NOT NULL DEFAULT '0.0.0.0',
+  `jobs_completed`      int(11)         NOT NULL DEFAULT '0',
+  `jobs_errors`         int(11)         NOT NULL DEFAULT '0',
+  `jobs_success`        int(11)         NOT NULL DEFAULT '0',
+  `jobs_total`          int(11)         NOT NULL DEFAULT '0',
+  `file_size`           bigint(20)      NOT NULL DEFAULT '0',
+  `total_size`          bigint(20)      NOT NULL DEFAULT '0',
+  `mime`                char(32)        NOT NULL DEFAULT 'application/octet-stream',
   PRIMARY KEY (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Dumping data for table `uploads`
---
-
-LOCK TABLES `uploads` WRITE;
-/*!40000 ALTER TABLE `uploads` DISABLE KEYS */;
-/*!40000 ALTER TABLE `uploads` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `uploads_tasks`
---
-
-DROP TABLE IF EXISTS `uploads_tasks`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `uploads_tasks` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `status` enum('new','started','error','success') NOT NULL DEFAULT 'new',
-  `started_date` bigint(20) NOT NULL DEFAULT '0',
-  `ended_date` bigint(20) NOT NULL DEFAULT '0',
-  `upload_id` bigint(20) NOT NULL DEFAULT '0',
-  `task_type` enum('video','audio','image') DEFAULT NULL,
-  `task_preset` char(32) NOT NULL DEFAULT '',
-  `task_size` bigint(20) NOT NULL DEFAULT '0',
-  `task_extension` char(32) NOT NULL DEFAULT '',
-  `task_priority` int(11) NOT NULL DEFAULT '0',
+  `id`                  bigint(20)      NOT NULL AUTO_INCREMENT,
+  `status`              enum('new','started','error','success') NOT NULL DEFAULT 'new',
+  `started_date`        bigint(20)      NOT NULL DEFAULT '0',
+  `ended_date`          bigint(20)      NOT NULL DEFAULT '0',
+  `upload_id`           bigint(20)      NOT NULL DEFAULT '0',
+  `task_type`           enum('video','audio','image') DEFAULT NULL,
+  `task_preset`         char(32)        NOT NULL DEFAULT '',
+  `task_size`           bigint(20)      NOT NULL DEFAULT '0',
+  `task_extension`      char(32)        NOT NULL DEFAULT '',
+  `task_priority`       int(11)         NOT NULL DEFAULT '0',
+  `task_started_by`     varchar(64)     NOT NULL DEFAULT '',
   PRIMARY KEY (`id`),
   KEY `status` (`status`),
   KEY `upload_id` (`upload_id`),
@@ -80,24 +43,129 @@ CREATE TABLE `uploads_tasks` (
   KEY `task_preset` (`task_preset`),
   KEY `task_priority` (`task_priority`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Dumping data for table `uploads_tasks`
---
+DELIMITER |
 
-LOCK TABLES `uploads_tasks` WRITE;
-/*!40000 ALTER TABLE `uploads_tasks` DISABLE KEYS */;
-/*!40000 ALTER TABLE `uploads_tasks` ENABLE KEYS */;
-UNLOCK TABLES;
-/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
+CREATE TRIGGER update_status_jobs BEFORE UPDATE ON uploads_tasks
+FOR EACH ROW BEGIN
+    
+    CASE Old.status
+        WHEN 'new' THEN BEGIN
+            
+            CASE New.status
+                
+                WHEN 'new' THEN BEGIN
+                    SET New.started_date = 0;
+                    SET New.ended_date = 0;
+                END; -- new - new --
+                
+                WHEN 'started' THEN BEGIN
+                    SET New.started_date = UNIX_TIMESTAMP( NOW() );
+                    SET New.ended_date = 0;
+                END; -- new - started --
+                
+                WHEN 'error' THEN BEGIN
+                    UPDATE uploads SET jobs_errors = jobs_errors + 1, jobs_completed = jobs_completed + 1 WHERE uploads.id = New.upload_id LIMIT 1;
+                    SET New.ended_date = UNIX_TIMESTAMP( NOW() );
+                END; -- new - error --
+                
+                WHEN 'success' THEN BEGIN
+                    UPDATE uploads SET jobs_success = jobs_success + 1, jobs_completed = jobs_completed + 1 WHERE uploads.id = New.upload_id LIMIT 1;
+                    SET New.ended_date = UNIX_TIMESTAMP( NOW() );
+                END; -- new - success --
+                
+            END CASE;
+            
+        END;
+        
+        WHEN 'started' THEN BEGIN
+            
+            CASE New.status
+                
+                WHEN 'new' THEN BEGIN
+                    SET New.started_date = 0;
+                    SET New.ended_date = 0;
+                END; -- started - new --
+                
+                WHEN 'started' THEN BEGIN
+                    SET New.started_date = UNIX_TIMESTAMP( NOW() );
+                    SET New.ended_date = 0;
+                END; -- started - started --
+                
+                WHEN 'error' THEN BEGIN
+                    UPDATE uploads SET jobs_errors = jobs_errors + 1, jobs_completed = jobs_completed + 1 WHERE uploads.id = New.upload_id LIMIT 1;
+                    SET New.ended_date = UNIX_TIMESTAMP( NOW() );
+                END; -- started - error --
+                
+                WHEN 'success' THEN BEGIN
+                    UPDATE uploads SET jobs_success = jobs_success + 1, jobs_completed = jobs_completed + 1 WHERE uploads.id = New.upload_id LIMIT 1;
+                    SET New.ended_date = UNIX_TIMESTAMP( NOW() );
+                END; -- started - success --
+                
+            END CASE;
+            
+        END;
+        
+        WHEN 'error' THEN BEGIN
+            
+            CASE New.status
+                
+                WHEN 'new' THEN BEGIN
+                    UPDATE uploads SET jobs_errors = jobs_errors - 1, jobs_completed = jobs_completed - 1 WHERE uploads.id = New.upload_id LIMIT 1;
+                    SET New.started_date = 0;
+                    SET New.ended_date = 0;
+                END; -- error - new --
+                
+                WHEN 'started' THEN BEGIN
+                    UPDATE uploads SET jobs_errors = jobs_errors - 1, jobs_completed = jobs_completed - 1 WHERE uploads.id = New.upload_id LIMIT 1;
+                    SET New.started_date = UNIX_TIMESTAMP( NOW() );
+                    SET New.ended_date = 0;
+                END; -- error - started --
+                
+                WHEN 'error' THEN BEGIN
+                    SET New.ended_date = UNIX_TIMESTAMP( NOW() );
+                END; -- error - error --
+                
+                WHEN 'success' THEN BEGIN
+                    UPDATE uploads SET jobs_errors = jobs_errors - 1, jobs_success = jobs_success - 1 WHERE uploads.id = New.upload_id LIMIT 1;
+                    SET New.ended_date = UNIX_TIMESTAMP( NOW() );
+                END; -- error - success --
+                
+            END CASE;
+            
+        END;
+        
+        WHEN 'success' THEN BEGIN
+            
+            CASE New.status
+                
+                WHEN 'new' THEN BEGIN
+                    UPDATE uploads SET jobs_success = jobs_success - 1, jobs_completed = jobs_completed - 1 WHERE uploads.id = New.upload_id LIMIT 1;
+                    SET New.started_date = 0;
+                    SET New.ended_date = 0;
+                END; -- success - new --
+                
+                WHEN 'started' THEN BEGIN
+                    UPDATE uploads SET jobs_success = jobs_success - 1, jobs_completed = jobs_completed - 1 WHERE uploads.id = New.upload_id LIMIT 1;
+                    SET New.started_date = UNIX_TIMESTAMP( NOW() );
+                    SET New.ended_date = 0;
+                END; -- success - started --
+                
+                WHEN 'error' THEN BEGIN
+                    UPDATE uploads SET jobs_success = jobs_success - 1, jobs_errors = jobs_errors + 1 WHERE uploads.id = New.upload_id LIMIT 1;
+                    SET New.ended_date = UNIX_TIMESTAMP( NOW() );
+                END; -- success - error --
+                
+                WHEN 'success' THEN BEGIN
+                    SET New.ended_date = UNIX_TIMESTAMP( NOW() );
+                END; -- success - success --
+                
+            END CASE;
+            
+        END;
+        
+    END CASE;
+    
+END|
 
-/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
-/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
-/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
-/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
-/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
-/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
-/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
-
--- Dump completed on 2013-10-25 17:24:01
+DELIMITER ;
