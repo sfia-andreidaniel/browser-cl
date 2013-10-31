@@ -28,4 +28,7 @@ exports.preset = function( transcoder ) {
         '-ar',          '44100',
         '-ac',          '2'
     );
+
+    transcoder.enableQtFastStart();
+
 }

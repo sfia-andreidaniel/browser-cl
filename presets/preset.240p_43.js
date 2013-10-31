@@ -15,4 +15,7 @@ exports.preset = function( transcoder ) {
         '-ar',          '44100',        // audio rate
         '-ab',          '32k'           // audio bitrate
     );
+
+    transcoder.enableQtFastStart();
+
 }

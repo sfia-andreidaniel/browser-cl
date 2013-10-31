@@ -1,0 +1,4 @@
+In order to install "qtfaststart", you need to run the following
+command in the extras/qtfaststart folder from the root of the transcoder:
+
+python setup.py install
