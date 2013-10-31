@@ -5,12 +5,30 @@
 </p>
 <h1>2. Project components</h1>
 
+<h2>2.0. First of all: NodeJS modules</h2>
+<p>This project depends heavily on <a href="http://nodejs.org">nodejs project</a>, and for being able to run it, you will need
+   the following nodejs modules:
+</p>
+<p>
+   <ul>
+        <li><b>xmlhttprequest</b> ( tested with 1.6.0 )</li>
+        <li><b>websocket</b> ( tested with 1.0.8 )</li>
+        <li><b>remove</b> ( tested with 0.1.5 )</li>
+        <li><b>mysql</b> ( tested with 2.0.0-alpha-9 )</li>
+        <li><b>mmmagic</b> ( tested with 0.3.4 )</li>
+        <li><b>mkdirp</b> ( tested with 0.3.5 )</li>
+        <li><b>gm</b> ( tested with 1.13.3 )</li>
+        <li><b>base64</b> ( tested with 2.1.0 )
+   </ul>
+</p>
+
 <h2>2.1. The API</h2>
 <p>The api component is the frontend and the master controller of the cloud. It's task
    is to receive files from clients, and distribute them across cloud storage nodes,
    handle transcoding tasks, create back-notifications to upload clients, etc.
 </p>
 <p>In a typical environment, only a single api node is required.</p>
+
 <h3>2.1.1 Api software requirements</h3>
 <p>The software requirements for the api node are the following:</p>
 <ul>
@@ -23,6 +41,7 @@
 <p>Worker nodes are servers that transcode uploaded files on the api server in different
    file versions, and store them to the storage servers.
 </p>
+
 <h3>2.2.1. Worker software requirements</h3>
 <p>The software requirements for the worker node are the following:</p>
 <ul>
@@ -35,6 +54,7 @@
 <p>Storage nodes are servers in the cloud that are storing and serving uploaded files
    on the API and their transcoded versions if needed.
 </p>
+
 <h3>2.3.1. Storage software requirements</h3>
 <p>The software requirements for a storage node are the following:</p>
 <ul>
@@ -48,26 +68,3 @@
     <li><b>PHP</b> driver</li>
     <li><b>JavaScript</b> driver</li>
 </ul>
-
-<h1>3. Flow</h1>
-<p>The project has multiple flows:</p>
-<h2>3.1. Client point of view flow</h2>
-<p>A client instantiates it's driver, and sends a file to the api server. The api server sends
-   a response to the client containing the following information:
-</p>
-<code>{
-    "name": &lt;string&gt; // the original uploaded file name
-    "size": &lt;string&gt; // the original uploaded file size
-    "files": {
-        "original": &lt;string&lt;  // the http://... url pointing to original file
-        "version_a": &lt;string&lt; // the transcoded version of original file, in format "version_a"
-        "version_b": &lt;string&lt; // the transcoded version of original file, in format "version_b"
-        ...
-        "version_n": &lt;string&lt; // the transcoded version of original file, in format "version_n"
-    },
-    "uploadId": &lt;integer&lt; // the upload id. Each upload operation has a unique id
-}
-
-// Example of versions: "240p.mp4", "webm", "ogv"
-</code>
-

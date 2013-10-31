@@ -69,6 +69,8 @@ exports.handle = function( response, request, urlInfo, controller ) {
                         
                         } else {
                             
+                            //console.log( "Skip: ", skip + ", limit: ", limit );
+                            
                             query.skip( skip ).limit( limit ).each( function() {
                                 
                                 out.push( this.clone() );
