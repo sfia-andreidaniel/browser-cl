@@ -311,11 +311,21 @@ if ( cluster.isMaster ) {
 
     /* Server firewall ... */
     server.on( 'connection', function( socket ) {
-        if ( !sockutils.hostAllowed( conf, socket ) ) {
-            /* Break connection on unauthorized ip addresses ! */
-            socket.destroy();
-            console.log("Firewall.reject: ", socket._peername.address );
+    
+        if ( controller ) {
+            // If we have a controller installed, we skip
+            // the firewall logic and let the controller
+            // to handle it
+        } else {
+    
+            if ( !sockutils.hostAllowed( conf, socket ) ) {
+                // Break connection on unauthorized ip addresses !
+                socket.destroy();
+                console.log("Firewall.reject: ", socket.remoteAddress );
+            }
+        
         }
+
     } );
     
     if ( connectionUpgradeFunc !== null ) {

@@ -1,0 +1,15 @@
+#!/bin/bash
+
+API_ETH=`cat conf/listen.conf | grep api | cut -d' ' -f2`
+API_PORT=`cat conf/listen.conf | grep api | cut -d' ' -f3`
+
+WORKER_ETH=`cat conf/listen.conf | grep worker | cut -d' ' -f2`
+WORKER_PORT=`cat conf/listen.conf | grep worker | cut -d' ' -f3`
+
+echo "Attempting to start worker node on $WORKER_ETH:$WORKER_PORT using api address $API_ETH:$API_PORT"
+
+nodejs main.js \
+    -module worker \
+    -api-address $API_ETH:$API_PORT \
+    -port $WORKER_PORT \
+    -data-dir /srv/www/websites/transcoder/htdocs/.worker

@@ -1,0 +1,16 @@
+#!/bin/bash
+
+API_ETH=`cat conf/listen.conf | grep api | cut -d' ' -f2`
+API_PORT=`cat conf/listen.conf | grep api | cut -d' ' -f3`
+
+STORAGE_ETH=`cat conf/listen.conf | grep storage | cut -d' ' -f2`
+STORAGE_PORT=`cat conf/listen.conf | grep storage | cut -d' ' -f3`
+
+echo "Attempting to start storage node on $STORAGE_ETH:$STORAGE_PORT using api address $API_ETH:$API_PORT..."
+
+nodejs main.js \
+    -module storage \
+    -api-address $API_ETH:$API_PORT \
+    -port $STORAGE_PORT \
+    -data-dir /srv/www/websites/transcoder/htdocs/.storage \
+    -www "http://storage01:80/"

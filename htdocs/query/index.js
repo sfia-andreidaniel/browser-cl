@@ -1,8 +1,25 @@
 var fs = require('fs'),
     Async = require( __dirname + "/../../lib/async.js" ).Async,
-    Query = require( __dirname + "/../../lib/registry.js").JobsCollection;
+    Query = require( __dirname + "/../../lib/registry.js").JobsCollection,
+    SocketUtils = require( __dirname + '/../../lib/socket-utils.js' );
+
 
 exports.handle = function( response, request, urlInfo, controller ) {
+    
+    /* Firewall */
+    var allowRequest = SocketUtils.firewall4( SocketUtils.getFirewallList( controller.isA ), request.socket.remoteAddress );
+
+    if ( !allowRequest ) {
+
+        console.log( "Firewall (" + controller.isA + "): Request rejected for " + request.socket.remoteAddress + " on resource: '/query/'" );
+
+        response.write( 'forbidden' );
+        response.end();
+        return;
+
+    }
+
+    
     
     if ( !controller || controller.isA != 'api' ) {
         
