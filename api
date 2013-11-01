@@ -6,6 +6,7 @@ API_PORT=`cat conf/listen.conf | grep api | cut -d' ' -f3`
 echo "Attempting to start api node on $API_ETH:$API_PORT..."
 
 nodejs main.js \
+     -listen $API_ETH \
      -port $API_PORT \
      -module api \
      -data-dir /srv/www/websites/transcoder/htdocs/.api

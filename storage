@@ -10,6 +10,7 @@ echo "Attempting to start storage node on $STORAGE_ETH:$STORAGE_PORT using api a
 
 nodejs main.js \
     -module storage \
+    -listen $STORAGE_ETH \
     -api-address $API_ETH:$API_PORT \
     -port $STORAGE_PORT \
     -data-dir /srv/www/websites/transcoder/htdocs/.storage \

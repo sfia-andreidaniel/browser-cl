@@ -1,0 +1,133 @@
+#!/usr/local/bin/nodejs
+
+function usage() {
+
+    console.log( [
+        "",
+        "Transcoding cloud network configuration utility",
+        "Usage: network [ api | worker | storage ] set [ port | interface ] value",
+        "",
+        "Examples:",
+        "    network api set interface 127.0.0.1",
+        "",
+        "    network worker set port 10000",
+        ""
+    ].join("\n") );
+
+    process.exit(1);
+}
+
+function error( reason ) {
+    console.log( "ERROR: " + reason );
+    process.exit(2);
+}
+
+if ( process.argv.length != 6 )
+    usage();
+
+var ipExpr = /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+
+function is_ip( ipAddr ) {
+    return ipExpr.test( ipAddr );
+}
+
+function is_port( value ) {
+    value = ~~value;
+    
+    if ( value < 1 || value > 65534 )
+        return false;
+    
+    return true;
+}
+
+var nodeType = null;
+var propertyName = null;
+var propertyValue = null;
+
+switch ( true ) {
+    case [ 'api', 'worker', 'storage' ].indexOf( nodeType = process.argv[2] ) == -1:
+        error( "Allowed network node types are: 'api', 'worker', 'storage'" );
+        break;
+    
+    case [ 'set' ].indexOf( process.argv[3] ) == -1:
+        error( "Currently supported network operation is 'set'" );
+        break;
+    
+    case [ 'port', 'interface' ].indexOf( propertyName = process.argv[4] ) == -1:
+        error( "Allowed network entities are: 'port', 'interface'" );
+        break;
+    
+    case process.argv[4] == 'port' && !is_port( ~~process.argv[5] ):
+        error( "Valid port value ranges from 1 to 65535" );
+        break;
+    
+    case process.argv[4] == 'interface' && !is_ip( process.argv[5] ):
+        error( "Please provide a valid ip value. 0.0.0.0 ip's are not allowed" );
+        break;
+
+}
+
+switch ( process.argv[4] ) {
+    
+    case 'port':
+        propertyValue = ~~process.argv[5];
+        break;
+    
+    case 'interface':
+        propertyValue = process.argv[5];
+        break;
+
+}
+
+console.log( "setting " + nodeType + " " + propertyName + " to " + propertyValue + "..." );
+
+var defaultPort = {
+    "api": 8080,
+    "storage": 10000,
+    "worker": 9000
+};
+
+try {
+    
+    var fs = require( 'fs' ),
+        buffer = fs.readFileSync( __dirname + '/conf/listen.conf' ),
+        lines = ( buffer + "" ).split( "\n" ),
+        mode = "insert";
+    
+    for ( var i=0, len = lines.length; i<len; i++ ) {
+        
+        if ( /^\#/.test( lines[i] ) )
+            continue;
+        
+        var parts = lines[i].split( ' ' );
+        
+        if ( parts.length == 3 ) {
+            
+            if ( parts[0] == nodeType ) {
+                
+                parts[ propertyName == 'interface' ? 1 : 2 ] = propertyValue;
+                mode = 'update';
+                lines[i] = parts.join( ' ' );
+                
+                break;
+            }
+            
+        }
+        
+    }
+    
+    if ( mode == 'insert' )
+        lines.push( nodeType + " " + ( propertyName == 'interface' ? propertyValue : '127.0.0.1' ) + " " + ( propertyName == 'port' ? propertyValue : defaultPort[ nodeType ] ) );
+    
+    buffer = lines.join( "\n" );
+    
+    fs.writeFileSync( __dirname + '/conf/listen.conf', buffer, { "encoding": "utf8" } );
+    
+    console.log( "Settings were changed successfully ( action: " + mode + " )" );
+    console.log( "Now restart the \"" + nodeType + "\" on this machine for settings to take effect..." );
+    
+} catch ( err ) {
+    
+    error( "Failed to set " + nodeType + "'s " + propertyName + ": " + err );
+    
+}

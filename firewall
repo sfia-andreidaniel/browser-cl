@@ -3,7 +3,7 @@
 var Remoting = require( __dirname + "/lib/remoting.js" ).Remoting;
 
 function usage() {
-    
+
     console.log( [
         "",
         "Transcoding cloud firewall utility",
@@ -17,7 +17,7 @@ function usage() {
         "    firewall remove storage 127.0.0.1",
         ""
     ].join("\n") );
-    
+
     process.exit(1);
 }
 

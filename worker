@@ -11,5 +11,6 @@ echo "Attempting to start worker node on $WORKER_ETH:$WORKER_PORT using api addr
 nodejs main.js \
     -module worker \
     -api-address $API_ETH:$API_PORT \
+    -listen $WORKER_ETH \
     -port $WORKER_PORT \
     -data-dir /srv/www/websites/transcoder/htdocs/.worker

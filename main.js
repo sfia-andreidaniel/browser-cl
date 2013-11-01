@@ -43,7 +43,7 @@ if ( cluster.isMaster ) {
     });
 
     console.log( "HTTP" + (conf.https ? "S" : "" ) +".workers", conf.workers );
-    console.log( "HTTP" + (conf.https ? "S" : "" ) +".allowFom\n*", ( conf.allowFrom || [ 'none (port is still used though)' ] ).join( "\n* " ) );
+    // console.log( "HTTP" + (conf.https ? "S" : "" ) +".allowFom\n*", ( conf.allowFrom || [ 'none (port is still used though)' ] ).join( "\n* " ) );
     console.log( "HTTP" + (conf.https ? "S" : "" ) +".documentRoot", conf.documentRoot + "/" );
     console.log( "HTTP" + (conf.https ? "S" : "" ) +".port", conf.port );
     console.log( "HTTP" + (conf.https ? "S" : "" ) +".interface", listen );
