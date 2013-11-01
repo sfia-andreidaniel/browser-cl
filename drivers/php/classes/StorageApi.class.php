@@ -3,9 +3,9 @@
     require_once __DIR__ . '/lib/vendor/phpws/websocket.client.php';
     require_once __DIR__ . '/lib/vendor/other/OSUtils.class.php';
     
-    define( "STORAGE_API_ENGINE_PHP", "PHP" );
+    define( "STORAGE_API_ENGINE_PHP",    "PHP"  );
     define( "STORAGE_API_ENGINE_NODEJS", "NODE" );
-    define( "STORAGE_API_ENGINE_AUTO", "AUTO" );
+    define( "STORAGE_API_ENGINE_AUTO",   "AUTO" );
     
     define( "STORAGE_NODEJS_BINARY_NAME", "nodejs" ); // .exe will be automatically appended if on windows platform
     
