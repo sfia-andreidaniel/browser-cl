@@ -55,7 +55,20 @@ CREATE TABLE `access` (
   `notification_email`  char(128) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `token` (`token`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE `notifications` (
+  `id`                  bigint(20) NOT NULL AUTO_INCREMENT,
+  `date`                timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `upload_id`           bigint(20) DEFAULT NULL,
+  `notification_title`  varchar(512) NOT NULL DEFAULT 'Notification',
+  `notification_text`   varchar(1024) NOT NULL DEFAULT '',
+  `status`              char(32) DEFAULT '',
+  `account_id`          int(11) DEFAULT NULL,
+  `sent_date`           datetime DEFAULT NULL,
+  `sent_error`          varchar(512) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 DELIMITER |
 
@@ -181,4 +194,68 @@ FOR EACH ROW BEGIN
     
 END|
 
-DELIMITER ;
+CREATE TRIGGER uploads_notifications AFTER UPDATE ON uploads
+FOR EACH ROW BEGIN
+    
+    IF ( New.jobs_completed = New.jobs_total ) THEN
+
+        IF ( New.jobs_errors = 0 ) THEN
+            
+            INSERT DELAYED INTO notifications ( upload_id, notification_title, notification_text, status, account_id )
+            VALUES ( New.id, 
+                     CONCAT( "Upload #", New.id, " finished SUCCESSFULLY" ), 
+                     "All jobs of the upload finished successfully", 
+                     "SUCCESS",
+                     New.account_id
+            );
+            
+        END IF;
+        
+        IF ( New.jobs_errors > 0 AND New.jobs_errors <> New.jobs_total ) THEN
+            
+            INSERT DELAYED INTO notifications ( upload_id, notification_title, notification_text, status, account_id )
+            VALUES ( New.id, 
+                     CONCAT( "Upload #", New.id, " finished with SOME ERRORS (", New.jobs_errors, " out of ", New.jobs_total, ")" ),
+                     CONCAT( New.jobs_errors, " out of ", New.jobs_total, " jobs encountered errors. You should investigate those errors, and eventually try to restart those jobs" ),
+                     "PARTIAL",
+                     New.account_id
+            );
+            
+        END IF;
+        
+        IF ( New.jobs_errors > 0 AND New.jobs_errors = New.jobs_total ) THEN
+        
+            INSERT DELAYED INTO notifications ( upload_id, notification_title, notification_text, status, account_id )
+            VALUES (
+                New.id,
+                CONCAT( "Upload #", New.id, " completed with ERROR!" ),
+                "All jobs of the upload encountered errors. Please investigate.",
+                "ERROR",
+                New.account_id
+            );
+        
+        END IF;
+        
+    END IF;
+    
+END|
+
+CREATE TRIGGER uploads_no_jobs AFTER INSERT ON uploads
+FOR EACH ROW BEGIN
+    
+    IF ( New.jobs_total = 0 ) THEN
+        
+        INSERT DELAYED INTO notifications ( upload_id, notification_title, notification_text, status, account_id )
+        VALUES (
+            New.id,
+            CONCAT ( "Upload #", New.id, " finished SUCCESSFULLY" ),
+            "No jobs were scheduled for this file",
+            "SUCCESS",
+            New.account_id
+        );
+        
+    END IF;
+    
+END|
+
+DELIMITER ;;
