@@ -234,7 +234,7 @@ tasker.sync( function( ) {
         
         ffmpeg_process.stdout.on( 'data', function( data ) {
             
-            process.stdout.write( data );
+            process.stderr.write( data );
             
         } );
         
@@ -242,7 +242,7 @@ tasker.sync( function( ) {
             
             if ( /frame\=/.test( data + '' ) )
             
-                process.stdout.write( data );
+                process.stderr.write( data );
             
         } );
         
