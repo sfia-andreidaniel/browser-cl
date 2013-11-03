@@ -35,7 +35,7 @@
 <ul>
     <li><b>nodejs</b> ( tested with v0.10.3 )</li>
     <li><b>mysql</b> ( tested with v5.5 )</li>
-    <li><b>ffmpeg</b></li> ( built with all formats support )
+    <li><b>ffmpeg</b> ( built with all formats support )</li>
     <li><b>sendmail</b></li>
 </ul>
 
