@@ -7,21 +7,21 @@ USE transcoder;
 DELIMITER ;
 
 CREATE TABLE `uploads` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `account_id` int(11) NOT NULL DEFAULT '0',
-  `storage_address` char(64) NOT NULL DEFAULT '',
-  `storage_path` char(255) NOT NULL DEFAULT '',
-  `storage_file` char(255) NOT NULL DEFAULT '',
-  `storage_http` char(64) NOT NULL DEFAULT '',
-  `upload_date` bigint(20) NOT NULL DEFAULT '0',
-  `upload_ip` char(15) NOT NULL DEFAULT '0.0.0.0',
-  `jobs_completed` int(11) NOT NULL DEFAULT '0',
-  `jobs_errors` int(11) NOT NULL DEFAULT '0',
-  `jobs_success` int(11) NOT NULL DEFAULT '0',
-  `jobs_total` int(11) NOT NULL DEFAULT '0',
-  `file_size` bigint(20) NOT NULL DEFAULT '0',
-  `total_size` bigint(20) NOT NULL DEFAULT '0',
-  `mime` char(32) NOT NULL DEFAULT 'application/octet-stream',
+  `id`                  bigint(20) NOT NULL AUTO_INCREMENT,
+  `account_id`          int(11) NOT NULL DEFAULT '0',
+  `storage_address`     char(64) NOT NULL DEFAULT '',
+  `storage_path`        char(255) NOT NULL DEFAULT '',
+  `storage_file`        char(255) NOT NULL DEFAULT '',
+  `storage_http`        char(64) NOT NULL DEFAULT '',
+  `upload_date`         bigint(20) NOT NULL DEFAULT '0',
+  `upload_ip`           char(15) NOT NULL DEFAULT '0.0.0.0',
+  `jobs_completed`      int(11) NOT NULL DEFAULT '0',
+  `jobs_errors`         int(11) NOT NULL DEFAULT '0',
+  `jobs_success`        int(11) NOT NULL DEFAULT '0',
+  `jobs_total`          int(11) NOT NULL DEFAULT '0',
+  `file_size`           bigint(20) NOT NULL DEFAULT '0',
+  `total_size`          bigint(20) NOT NULL DEFAULT '0',
+  `mime` char(32)       NOT NULL DEFAULT 'application/octet-stream',
   PRIMARY KEY (`id`),
   KEY `account_id` (`account_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
@@ -47,12 +47,15 @@ CREATE TABLE `uploads_tasks` (
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 CREATE TABLE `access` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `token` varchar(32) NOT NULL DEFAULT '',
-  `description` char(255) DEFAULT NULL,
+  `id`                  int(11) NOT NULL AUTO_INCREMENT,
+  `token`               varchar(32) NOT NULL DEFAULT '',
+  `account_date`        timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `description`         char(255) DEFAULT NULL,
+  `notification_url`    char(255) DEFAULT NULL,
+  `notification_email`  char(128) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `token` (`token`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8
 
 DELIMITER |
 

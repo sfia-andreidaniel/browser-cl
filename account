@@ -4,12 +4,14 @@ function help() {
 
     console.log( [
         "",
-        "Transcoding cloud user access utility",
+        "Transcoding cloud user account utility",
         "Usage: ",
         "    user list",
         "    user add <description>",
-        "    user update <user_token> <description>",
-        "    user delete <user_token>",
+        "    user update <account_id> <description>",
+        "    user delete <account_id>",
+        "    user set <account_id> notification_email [<email_address>]",
+        "    user set <account_id> notification_url [<url>]",
         ""
     ].join("\n") );
 
@@ -21,9 +23,27 @@ function error( reason ) {
     process.exit(2);
 }
 
+function str_pad( str, length ) {
+    str = str || '-';
+    var strp = str.substr( 0, length );
+    if ( str.length > length ) {
+        strp = strp.substr( 0, length - 3 ) + '...';
+    } else {
+        
+        while ( strp.length < length ) {
+            strp += ' ';
+        }
+        
+    }
+    
+    return strp;
+}
+
 var cmd         = null,
     token       = null,
     description = null,
+    field_name  = null,
+    field_value = null,
     mysql       = require( 'mysql' ),
     db          = null,
     fs          = require( 'fs' ),
@@ -56,6 +76,8 @@ try {
     error( "Failed to initialize database: " + err );
 }
 
+// console.log( process.argv );
+
 
 switch ( true ) {
     case process.argv.length == 3 && process.argv[2] == 'list':
@@ -78,6 +100,17 @@ switch ( true ) {
         description = process.argv[4];
         break;
     
+    case process.argv.length >= 5 && process.argv.length <= 6 &&
+         process.argv[2] == 'set' &&
+         [ 'notification_email', 'notification_url' ].indexOf( process.argv[4] ) >= 0:
+         
+         cmd = 'set';
+         token = process.argv[3];
+         field_name = process.argv[4];
+         field_value= process.argv[5] || null;
+         
+         break;
+    
     default:
         help();
         break;
@@ -85,7 +118,7 @@ switch ( true ) {
 
 function listUsers( conn, callback ) {
     
-    var sql = "SELECT token, description FROM access";
+    var sql = "SELECT id, token, account_date, notification_url, notification_email, description FROM access";
     
     conn.query( sql, function( err, rows ) {
         
@@ -94,12 +127,28 @@ function listUsers( conn, callback ) {
         } else {
             
             if ( !rows.length )
-                console.log( "No tokens found" );
-            
-            for ( var i=0, len = rows.length; i<len; i++ ) {
-                console.log( rows[i].token, "|", rows[i].description );
+                console.log( "No accounts were found" );
+            else {
+                console.log( [
+                            "-----------------------------------------------------------------------",
+                            ""
+                    ].join( "\n" )
+                );
+
+                for ( var i=0, len = rows.length; i<len; i++ ) {
+                    console.log([
+                            "account id        : " + rows[i].token,
+                            "description       : " + ( rows[i].description || '<none>' ),
+                            "notification_url  : " + ( rows[i].notification_url || '<none>' ),
+                            "notification_email: " + ( rows[i].notification_email || '<none>' ),
+                            "account_date      : " + ( rows[i].account_date ? rows[i].account_date : 'not_set' ),
+                            "-----------------------------------------------------------------------",
+                            ""
+                        ].join( "\n" )
+                    );
+                }
             }
-            
+
             callback( false );
         }
         
@@ -120,7 +169,9 @@ function addUser( conn, description, callback ) {
         if ( err )
             callback( err );
         else {
-            console.log( "Creted token: " + tok );
+            console.log( "\n" );
+            console.log( "Creted account (api key): " + tok );
+            console.log( "You can now pass this api key to your cloud client when uploading files.\n" );
             callback( false );
         }
         
@@ -140,9 +191,9 @@ function updateUser( conn, token, description, callback ) {
         else {
             
             if ( result.affectedRows ) {
-                console.log( "Token " + token + " updated successfully" );
+                console.log( "Account id " + token + " updated successfully" );
                 callback( false );
-            } else callback( "Token " + token + " not found!" );
+            } else callback( "Account id " + token + " not found!" );
             
         }
         
@@ -159,12 +210,37 @@ function deleteUser( conn, token, callback ) {
                         callback( err );
                     else {
                         if ( result.affectedRows ) {
-                            console.log( "Token " + token + " has been removed from the system" );
+                            console.log( "Account id " + token + " has been removed from the system" );
                             callback( false );
-                        } else callback( "Token " + token + " not found!" );
+                        } else callback( "Account id " + token + " not found!" );
                     }
                 }
     );
+    
+}
+
+function setupFeatures( conn, token, propertyName, propertyValue, callback ) {
+    
+    var sql = [
+        "UPDATE access SET ",
+        propertyName + " = " + ( propertyValue ? conn.escape( propertyValue ) : "NULL" ),
+        "WHERE token=" + conn.escape( token ),
+        "LIMIT 1"
+    ].join( "\n" );
+    
+    conn.query( sql, function( err, result ) {
+        
+        if ( err )
+            callback( err );
+        else {
+            
+            if ( result.affectedRows ) {
+                console.log( "Property " + propertyName + " has been successfully updated for account id " + token );
+                callback( false );
+            } else callback( "Account id " + token + " not found" );
+        }
+        
+    } );
     
 }
 
@@ -239,6 +315,18 @@ tasker.sync( function() {
                     else
                         task.on( 'success' );
                 });
+                break;
+            
+            case 'set':
+                setupFeatures( conn, token, field_name, field_value, function( err ) {
+                    
+                    if ( err )
+                        task.on( 'error', err );
+                    else
+                        task.on( 'success' );
+                    
+                });
+                
                 break;
             
             default:
