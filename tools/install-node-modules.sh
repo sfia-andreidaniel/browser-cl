@@ -16,6 +16,7 @@ npm install mkdirp
 npm install gm
 npm install base64
 npm install nodemailer
+npm install adm-zip
 
 echo ""
 echo "======================"

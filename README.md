@@ -20,6 +20,7 @@
         <li><b>gm</b> ( tested with 1.13.3 )</li>
         <li><b>base64</b> ( tested with 2.1.0 )</li>
         <li><b>nodemailer</b> ( tested with 0.5.5 )</li>
+        <li><b>adm-zip</b> ( only for the worker, tested with 0.4.3 )</li>
    </ul>
 </p>
 

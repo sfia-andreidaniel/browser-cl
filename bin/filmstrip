@@ -1,0 +1,578 @@
+#!/usr/bin/nodejs
+function usage() {
+    
+    console.log( [
+            "Usage: filmstrip <num_frames> <frame_width> <frame_height> <output_format> <input_file> <output_file>",
+            "",
+            "WHERE: ",
+            "    <num_frames>    is the number of frames to extract from the video",
+            "    <frame_width>   resize video frame to width pixels",
+            "    <frame_height>  resize video frame to height pixels",
+            "    <output_format> can be: 'filmstrip' or 'animated' or 'archive'",
+            "    <input_file>    path to your movie file",
+            "    <output_file>   path to destination file",
+            "",
+            "NOTES: ",
+            "       All arguments are required",
+            "",
+            "       When you choose 'filmstrip' output format, a valid image extension",
+            "       should be chosen to <output_file>.",
+            "",
+            "       When you choose 'animated' as output format, the output file will",
+            "       contain an animated gif with extracted frames from the video",
+            "",
+            "       When you choose 'archive' as output format, the output file will",
+            "       be a zip format file, containing the frames in png format, without",
+            "       extension",
+            "",
+            "       The processing folder will be the folder of the source file",
+            "",
+            "AUTHOR: sfia.andreidaniel@gmail.com",
+            "",
+            "DEPENDS ON: ffmpeg, graphicsmagick",
+            "",
+            "EXAMPLES: ",
+            "",
+            "     filmstrip 30 160 100 archive file.avi file.zip",
+            "         extracts 30 frames from file.avi of 160x100 pixels and stores them in file.zip/0..29",
+            "",
+            "     filmstrip 30 160 100 animated file.avi file.gif",
+            "         creates a 160x100 animated gif file ( 1 sec between frames ) from file.avi and stores",
+            "         it inside file.gif",
+            "",
+            "     filmstrip 30 160 100 filmstrip file.avi file.jpg",
+            "         creates a ( 30x160 )x100 jpg file containing 30 frames from file.avi and store it in",
+            "         file.jpg",
+            "",
+            "EXIT CODE: 0 on success, 1 on error",
+            ""
+        ].join( "\n" )
+    );
+    
+    process.exit( 1 );
+}
+
+if ( process.argv.length < 8 )
+    usage();
+
+var 
+    numFrames = ~~process.argv[2],
+    frameWidth = ~~process.argv[3],
+    frameHeight = ~~process.argv[4],
+    outputFormat = process.argv[5],
+    inputFile = process.argv[6],
+    outputFile = process.argv[7],
+    
+    spawn = require( 'child_process' ).spawn,
+    
+    which = require( __dirname + '/../lib/osutils.js' ).which,
+    async = require( __dirname + '/../lib/async.js' ).Async,
+    
+    parser = require( __dirname + '/../lib/videoparser.js' ).VideoParser,
+    
+    fs = require( 'fs' ),
+    
+    tasker = new async(),
+    
+    ffmpegBinPath = null,
+    
+    fileInfo = null,
+    
+    destinationFolder = null,
+    
+    fps = null,
+    
+    args = [],
+    
+    ffmpeg_process = null,
+    
+    frames = [],
+    
+    finalFrames = [],
+    
+    gm = require( 'gm' )
+    
+    ;
+
+if ( [ 'filmstrip', 'animated', 'archive' ].indexOf( outputFormat ) == -1 ) {
+    console.log( "ERROR: unsupported output format: " + outputFormat + ", allowed formats are: \"filmstrip\", \"animated\", \"archive\"" );
+    process.exit( 1 );
+}
+
+// which ffmpeg?
+tasker.sync( function() {
+    
+    ( function( task ) {
+        
+        which( 'ffmpeg', function( err, path ) {
+            
+            if ( err )
+                task.on( 'error', "ffmpeg not found: " + err );
+            else {
+                
+                ffmpegBinPath = path;
+                
+                task.on( 'success' )
+            }
+        } );
+        
+    })( this );
+    
+} );
+
+// test input file exists
+tasker.sync( function() {
+    
+    ( function( task ) {
+        
+        fs.exists( inputFile, function( exists ) {
+            
+            if ( !exists )
+                task.on( 'error', "File: " + inputFile + " does not exists" );
+            else
+                task.on( 'success' );
+            
+        } );
+        
+    })( this );
+    
+} );
+
+// parse destination folder
+tasker.sync( function() {
+    
+    ( function( task ) {
+        
+        fs.realpath( inputFile, function( err, resolvedPath ) {
+            
+            if ( err ) {
+                task.on( 'error', err );
+                return;
+            }
+            
+            var parts = resolvedPath.split( '/' );
+            parts = parts.slice( 0, parts.length - 1 ).join( '/' ) + '/';
+            
+            destinationFolder = parts;
+            
+            console.log( "* using destination folder for file operations: " + destinationFolder );
+            
+            task.on( 'success' );
+            
+        } );
+        
+    })( this );
+    
+} );
+
+// parse file
+
+tasker.sync( function() {
+    
+    ( function( task ) {
+    
+        parser( inputFile, function( err, result ) {
+            
+            if ( err ) {
+                task.on( 'error', "Failed to parse file: " + err );
+            } else {
+                fileInfo = result;
+                task.on( 'success' );
+            }
+        } );
+    
+    })( this );
+    
+} );
+
+// decide if file can be filmstriped
+
+tasker.sync( function() {
+    
+    if ( !fileInfo || !fileInfo.duration ||
+         !fileInfo.video ||
+         !fileInfo.video.width ||
+         !fileInfo.video.height ||
+         !fileInfo.video.fps
+    ) this.on( 'error', "Cannot create a filmstrip from this file" );
+    
+    this.on( 'success' );
+    
+} );
+
+tasker.sync( function() {
+    
+    ( function( task ) {
+    
+        args.push( '-i' );
+        args.push( inputFile );
+        args.push( '-f' );
+        args.push( 'image2' );
+        
+        args.push( '-vf' );
+        args.push( 'fps=fps=1/' + ( fileInfo.duration / ( numFrames + 2 ) ).toFixed(3) );
+        
+        args.push( '-vframes' );
+        args.push( numFrames + 2 );
+        
+        args.push( destinationFolder + 'out%d.png' );
+    
+        //console.log( ffmpegBinPath, '"' + args.join( '" "' ) + '"' );
+    
+        task.on( 'success' );
+    
+    })( this );
+    
+} );
+
+// Create and run the ffmpeg process
+tasker.sync( function( ) {
+    
+    ( function( task ) {
+        
+        ffmpeg_process = spawn( ffmpegBinPath, args );
+        
+        ffmpeg_process.stdout.on( 'data', function( data ) {
+            
+            process.stdout.write( data );
+            
+        } );
+        
+        ffmpeg_process.stderr.on( 'data', function( data ) {
+            
+            if ( /frame\=/.test( data + '' ) )
+            
+                process.stdout.write( data );
+            
+        } );
+        
+        ffmpeg_process.on( 'close', function() {
+            
+            task.on( 'success' );
+            
+        } );
+        
+    })( this );
+    
+});
+
+// test if all frames exists
+
+tasker.sync( function() {
+    
+    ( function( task ) {
+        
+        var frame;
+        
+        for ( var i=0; i <= (numFrames + 2); i++ ) {
+            
+            try {
+            
+                if ( fs.existsSync( frame = ( destinationFolder + '/out' + ( i + 1 ) + ".png" ) ) )
+                    frames.push( frame );
+            
+            } catch ( error ) {
+                
+            }
+            
+        }
+        
+        if ( frames.length == numFrames + 2 )
+            task.on( 'success' );
+        else
+            task.on( 'error', "The encoder generated " + frames.length + " frames, but expected to generate " + ( numFrames + 2 ) + " frames" );
+        
+    })( this );
+    
+} );
+
+// create the filmstrip final file
+tasker.sync( function() {
+    
+    if ( outputFormat == 'filmstrip' ) {
+    
+        ( function( task ) {
+            gm( 1, frameHeight, "#000000" )
+                .write( destinationFolder + "/final.png", function( err ) {
+                    
+                    if ( err ) {
+                        task.on( 'error', 'failed to create final filmstrip file: ' + err );
+                    } else {
+                        task.on( 'success' );
+                    }
+                    
+                } );
+        })( this );
+    } else this.on( 'success' );
+} );
+
+// resize frames, and place them onto the filmstrip image
+tasker.sync( function() {
+    
+    ( function( task ) {
+    
+        var subtasker = new async();
+    
+        for ( var i = 1; i < frames.length - 1; i++ ) {
+            
+            ( function( frame, index ) {
+                
+                subtasker.sync( function() {
+                    
+                    console.log( "* resizing frame #", index, "/", numFrames, " to " + frameWidth + "x" + frameHeight + "..." );
+                    
+                    ( function( subtask ) {
+                    
+                        gm( frame ).resize( frameWidth, frameHeight, "!" )
+                            .write( frame, function( err ) {
+                                
+                                if ( err ) {
+                                    subtask.on( 'error', "Failed to resize frame #" + index + ": " + err );
+                                } else {
+                                    finalFrames.push( frame );
+                                    subtask.on( 'success' );
+                                }
+                                
+                            } );
+                    
+                    })( this );
+                    
+                } );
+                
+            })( frames[i], i );
+            
+        }
+        
+        subtasker.run( function() {
+            task.on( 'success' );
+        }, function( reason ) {
+            task.on( 'error', reason );
+        } );
+        
+    })( this );
+    
+} );
+
+tasker.sync( function( ) {
+    
+    if ( outputFormat == 'filmstrip' ) {
+    
+        ( function (task) {
+            
+            var callArgs = finalFrames,
+               img = gm( destinationFolder + "/final.png" );
+            
+            for ( var i=0, len = finalFrames.length; i<len; i++ )
+                img = img.append( finalFrames[i], true );
+            
+            frames.push( destinationFolder + "/final.png" );
+            
+            img.write( outputFile, function( err ) {
+                
+                if ( err )
+                    task.on( 'error', err );
+                else
+                    task.on( 'success' );
+                
+            } );
+        
+        } )( this );
+    } else this.on( 'success' );
+    
+} );
+
+tasker.sync( function( ) {
+    
+    if ( outputFormat == 'animated' ) {
+        
+        ( function( task ) {
+            
+            var img = gm();
+            
+            for ( var i = 0, len=finalFrames.length; i<len; i++ ) {
+                
+                img = img.out( '-delay' );
+                img = img.out( '100' );
+                img = img.out( finalFrames[i] );
+                
+            }
+            
+            img.write( destinationFolder + "/final.gif", function( err ) {
+                
+                frames.push( destinationFolder + "/final.gif" );
+                
+                if ( err )
+                    task.on( "error", err );
+                else
+                    task.on( 'success' );
+                
+            } );
+            
+        } )( this );
+    
+    } else this.on( 'success' );
+    
+} );
+
+tasker.sync( function() {
+    
+    if ( outputFormat == 'animated' ) {
+        
+        console.log( "Animated sequence... ");
+        
+        // copy created gif file to destionation file
+        ( function( task ) {
+        
+            var sFile = fs.realpathSync( destinationFolder + "/final.gif" );
+            
+            console.log( sFile );
+            
+            try {
+            
+                var dFile = fs.realpathSync( outputFile );
+            
+            } catch ( err ) {
+                var dFile = null;
+            }
+            
+            if ( sFile == dFile )
+                task.on( 'success' );
+            else {
+                
+                var hadErrors = false;
+                
+                var inputStream = fs.createReadStream( destinationFolder + "/final.gif" );
+                
+                inputStream.on( 'error', function( err ) {
+                    hadErrors = true;
+                    task.on( 'error', err );
+                } );
+                
+                var outputStream = fs.createWriteStream( outputFile );
+                
+                outputStream.on( 'error', function( err ) {
+                    hadErrors = true;
+                    task.on( 'error', err );
+                } );
+                
+                outputStream.on( 'close', function() {
+                    
+                    if ( !hadErrors )
+                        task.on( 'success' );
+                    
+                } );
+                
+                inputStream.pipe( outputStream );
+            
+            }
+        
+        })( this );
+        
+    } else this.on( 'success' );
+    
+} );
+
+
+var cleanup = function( ) {
+        
+        // make cleanup...
+        
+        if ( frames.length ) {
+            
+            for ( var i=0, len=frames.length; i<len; i++ ) {
+                
+                try {
+                    if ( fs.existsSync( frames[i] ) )
+                        fs.unlinkSync( frames[i] );
+                    
+                } catch ( err ) {
+                    
+                    console.log( "* cleanup: failed to remove file: " + frames[i] );
+                    
+                }
+                
+            }
+            
+        }
+        
+        if ( finalFrames.length ) {
+            
+            for ( var i=0, len = finalFrames.length; i<len; i++ ) {
+                
+                try {
+                    
+                    if ( fs.existsSync( finalFrames[i] ) )
+                        fs.unlinkSync( finalFrames[i] );
+                    
+                } catch ( err ) {
+                    
+                    console.log( "* cleanup: failed to remove file: " + finalFrames[i] );
+                    
+                }
+                
+            }
+            
+        }
+    };
+
+
+
+tasker.sync( function() {
+    
+    if ( outputFormat == 'archive' ) {
+        
+        ( function( task ) {
+        
+            var AdmZip = require( 'adm-zip' ),
+                zip = new AdmZip(),
+                dFile;
+            
+            for ( var i=0, len = finalFrames.length; i<len; i++ ) {
+                dFile = finalFrames[i].replace( /\/out[\d]+\.png$/, "/" + i );
+                fs.renameSync( finalFrames[i], dFile  );
+                finalFrames[i] = dFile;
+                zip.addLocalFile( finalFrames[i] );
+            }
+            
+            cleanup();
+            
+            zip.writeZip( outputFile );
+        
+            task.on( 'success' );
+        
+        })( this );
+        
+    } else this.on( 'success' );
+    
+} );
+
+tasker.run(
+    function() {
+        
+        try {
+            
+            cleanup();
+            
+        } catch (e ) {}
+        
+        console.log( "SUCCESS" );
+        
+        process.exit( 0 );
+    
+    },
+    
+    function( reason ) {
+
+        try {
+            
+            cleanup();
+            
+        } catch (e ) {}
+        
+        
+        console.log( "ERROR:", reason );
+        
+        process.exit( 1 );
+    }
+    
+);
