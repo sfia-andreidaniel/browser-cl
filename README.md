@@ -18,7 +18,7 @@
         <li><b>mmmagic</b> ( tested with 0.3.4 )</li>
         <li><b>mkdirp</b> ( tested with 0.3.5 )</li>
         <li><b>gm</b> ( tested with 1.13.3 )</li>
-        <li><b>base64</b> ( tested with 2.1.0 )
+        <li><b>base64</b> ( tested with 2.1.0 )</li>
         <li><b>nodemailer</b> ( tested with 0.5.5 )</li>
    </ul>
 </p>
@@ -36,6 +36,7 @@
     <li><b>nodejs</b> ( tested with v0.10.3 )</li>
     <li><b>mysql</b> ( tested with v5.5 )</li>
     <li><b>ffmpeg</b></li> ( built with all formats support )
+    <li><b>sendmail</b></li>
 </ul>
 
 <h2>2.2. The WORKER</h2>
@@ -47,8 +48,9 @@
 <p>The software requirements for the worker node are the following:</p>
 <ul>
     <li><b>nodejs</b> ( tested with v0.10.3 )</li>
-    <li><b>graphicsmagick</b> ( tested with v.1.3.12-1.1build1 on ubuntu 12.04 )
-    <li><b>ffmpeg</b></li> ( built with all formats support )
+    <li><b>graphicsmagick</b> ( tested with v.1.3.12-1.1build1 on ubuntu 12.04 )</li>
+    <li><b>ffmpeg</b> ( built with all formats support )</li> 
+    <li><b>sendmail</b></li>
 </ul>
 
 <h2>2.3. The STORAGE</h2>
@@ -61,6 +63,7 @@
 <ul>
     <li><b>nodejs</b> ( tested with v0.10.3 )</li>
     <li><b>nginx</b> ( compiled with mp4 module )</li>
+    <li><b>sendmail</b></li>
 </ul>
 
 <h2>2.4. Drivers available for the cloud clients</h2>
