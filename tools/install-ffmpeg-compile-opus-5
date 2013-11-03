@@ -1,0 +1,19 @@
+#!/bin/bash
+
+if [ $# -ne 1 ]; then echo "This is a subscript of install-ffmpeg script and is not intended to be executed manually"; exit; fi
+
+BASEDIR="$( dirname "${BASH_SOURCE[0]}" )"
+ROOTPATH=`realpath "$BASEDIR"/../extras/ffmpeg`
+export PATH=$PATH:$ROOTPATH/bin
+echo "compiling opus..."
+cd "$ROOTPATH/opus"
+echo " > autogen"
+./autogen.sh > /dev/null 2>&1
+echo " > configure"
+./configure --prefix="$ROOTPATH/ffmpeg_build" --disable-shared > /dev/null 2>&1
+echo " > make"
+make > /dev/null 2>&1
+echo " > install"
+make install > /dev/null 2>&1
+echo " > cleanup"
+make clean > /dev/null 2>&1

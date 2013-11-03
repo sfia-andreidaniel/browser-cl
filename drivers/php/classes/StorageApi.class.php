@@ -161,6 +161,9 @@
                     'size' => $totalSize = filesize( $localFilePath )
                 ];
                 
+                if ( $options !== NULL && is_array( $options ) )
+                    $filePacket[ 'options' ] = $options;
+                
                 $ws->sendMessage( WebSocketMessage::create( json_encode( $filePacket ) ) );
                 
                 // Read acknowledge packet

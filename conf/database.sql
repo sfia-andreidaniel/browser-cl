@@ -7,21 +7,23 @@ USE transcoder;
 DELIMITER ;
 
 CREATE TABLE `uploads` (
-  `id`                  bigint(20)      NOT NULL AUTO_INCREMENT,
-  `storage_address`     char(64)        NOT NULL DEFAULT '',
-  `storage_path`        char(255)       NOT NULL DEFAULT '',
-  `storage_file`        char(255)       NOT NULL DEFAULT '',
-  `storage_http`        char(64)        NOT NULL DEFAULT '',
-  `upload_date`         bigint(20)      NOT NULL DEFAULT '0',
-  `upload_ip`           char(15)        NOT NULL DEFAULT '0.0.0.0',
-  `jobs_completed`      int(11)         NOT NULL DEFAULT '0',
-  `jobs_errors`         int(11)         NOT NULL DEFAULT '0',
-  `jobs_success`        int(11)         NOT NULL DEFAULT '0',
-  `jobs_total`          int(11)         NOT NULL DEFAULT '0',
-  `file_size`           bigint(20)      NOT NULL DEFAULT '0',
-  `total_size`          bigint(20)      NOT NULL DEFAULT '0',
-  `mime`                char(32)        NOT NULL DEFAULT 'application/octet-stream',
-  PRIMARY KEY (`id`)
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `account_id` int(11) NOT NULL DEFAULT '0',
+  `storage_address` char(64) NOT NULL DEFAULT '',
+  `storage_path` char(255) NOT NULL DEFAULT '',
+  `storage_file` char(255) NOT NULL DEFAULT '',
+  `storage_http` char(64) NOT NULL DEFAULT '',
+  `upload_date` bigint(20) NOT NULL DEFAULT '0',
+  `upload_ip` char(15) NOT NULL DEFAULT '0.0.0.0',
+  `jobs_completed` int(11) NOT NULL DEFAULT '0',
+  `jobs_errors` int(11) NOT NULL DEFAULT '0',
+  `jobs_success` int(11) NOT NULL DEFAULT '0',
+  `jobs_total` int(11) NOT NULL DEFAULT '0',
+  `file_size` bigint(20) NOT NULL DEFAULT '0',
+  `total_size` bigint(20) NOT NULL DEFAULT '0',
+  `mime` char(32) NOT NULL DEFAULT 'application/octet-stream',
+  PRIMARY KEY (`id`),
+  KEY `account_id` (`account_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 CREATE TABLE `uploads_tasks` (
@@ -42,6 +44,14 @@ CREATE TABLE `uploads_tasks` (
   KEY `task_type` (`task_type`),
   KEY `task_preset` (`task_preset`),
   KEY `task_priority` (`task_priority`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE `access` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `token` varchar(32) NOT NULL DEFAULT '',
+  `description` char(255) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `token` (`token`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 DELIMITER |

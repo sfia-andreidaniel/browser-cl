@@ -1,0 +1,149 @@
+#!/bin/bash
+
+echo installing ffmpeg ...
+echo ""
+
+apt-get remove -y \
+   ffmpeg \
+   x264 \
+   libav-tools \
+   libvpx-dev \
+   libx264-dev \
+   yasm > /dev/null 2>&1
+
+echo ""
+
+echo installing prerequisite apt packages...
+echo ""
+echo "apt-get install -y \
+  autoconf \
+  automake \
+  build-essential \
+  checkinstall \
+  git \
+  libass-dev \
+  libfaac-dev \
+  libgpac-dev \
+  libmp3lame-dev \
+  libopencore-amrnb-dev \
+  libopencore-amrwb-dev \
+  librtmp-dev \
+  libspeex-dev \
+  libtheora-dev \
+  libtool \
+  libvorbis-dev \
+  pkg-config \
+  texi2html \
+  zlib1g-dev \
+  realpath \
+  python"
+
+apt-get install -y \
+  autoconf \
+  automake \
+  build-essential \
+  checkinstall \
+  git \
+  libass-dev \
+  libfaac-dev \
+  libgpac-dev \
+  libmp3lame-dev \
+  libopencore-amrnb-dev \
+  libopencore-amrwb-dev \
+  librtmp-dev \
+  libspeex-dev \
+  libtheora-dev \
+  libtool \
+  libvorbis-dev \
+  pkg-config \
+  texi2html \
+  zlib1g-dev \
+  realpath \
+  python > /dev/null 2>&1
+
+BASEDIR="$( dirname "${BASH_SOURCE[0]}" )"
+SCRIPTPATH=`realpath "$BASEDIR"`
+ROOTPATH="$SCRIPTPATH/../extras/ffmpeg"
+
+echo ""
+echo "data will be written in extras/ffmpeg folder"
+
+rm -rf $ROOTPATH > /dev/null 2>&1
+
+mkdir $ROOTPATH
+cd $ROOTPATH
+
+echo ""
+
+echo "downloading source dependencies..."
+
+echo "* yasm ( from git://github.com/yasm/yasm.git )"
+git clone git://github.com/yasm/yasm.git > /dev/null 2>&1
+echo "* x264 ( from git://git.videolan.org/x264.git )"
+git clone --depth 1 git://git.videolan.org/x264.git > /dev/null 2>&1
+echo "* fdk-aac ( from git://github.com/mstorsjo/fdk-aac.git )"
+git clone git://github.com/mstorsjo/fdk-aac.git > /dev/null 2>&1
+echo "* libvpx ( from http://git.chromium.org/webm/libvpx.git )"
+git clone --depth 1 http://git.chromium.org/webm/libvpx.git > /dev/null 2>&1
+echo "* opus ( from git://git.xiph.org/opus.git )"
+git clone --depth 1 git://git.xiph.org/opus.git > /dev/null 2>&1
+echo "* ffmpeg ( from git://source.ffmpeg.org/ffmpeg )"
+git clone --depth 1 git://source.ffmpeg.org/ffmpeg > /dev/null 2>&1
+echo ""
+
+echo "begin compilation. the operation can take up to 15-20 minutes, depending on cpu speed."
+echo ""
+
+mkdir "$ROOTPATH/bin"
+mkdir "$ROOTPATH/ffmpeg_build"
+
+"$SCRIPTPATH/install-ffmpeg-compile-yasm-1" "ok"
+if [ -f "$ROOTPATH/bin/yasm" ]; then
+    echo "yasm installed successfully";
+else
+    echo "yasm failed to install";
+    exit;
+fi
+
+"$SCRIPTPATH/install-ffmpeg-compile-x264-2" "ok"
+if [ -f "$ROOTPATH/bin/x264" ]; then
+    echo "x264 installed successfully"
+else
+    echo "x264 failed to install";
+    exit;
+fi
+
+"$SCRIPTPATH/install-ffmpeg-compile-fdk-aac-3" "ok"
+if [ -f "$ROOTPATH/ffmpeg_build/lib/libfdk-aac.a" ]; then
+    echo "libfdk-aac installed successfully";
+else
+    echo "libfda-aac failed to install";
+    exit;
+fi
+
+"$SCRIPTPATH/install-ffmpeg-compile-vp8-4" "ok"
+if [ -f "$ROOTPATH/ffmpeg_build/lib/libvpx.a" ]; then
+    echo "libvpx installed successfully";
+else
+    echo "libvpx failed to install";
+    exit;
+fi
+
+"$SCRIPTPATH/install-ffmpeg-compile-opus-5" "ok"
+if [ -f "$ROOTPATH/ffmpeg_build/lib/libopus.a" ]; then
+    echo "libopus installed successfully";
+else
+    echo "libopus failed to install";
+    exit;
+fi
+
+"$SCRIPTPATH/install-ffmpeg-compile-ffmpeg-6" "ok"
+if [ -f "$ROOTPATH/bin/ffmpeg" ]; then
+    echo "ffmpeg installed successfully";
+else
+    echo "ffmpeg failed to install";
+exit;
+
+echo "FFMPEG INSTALATION COMPLETED SUCCESSFULLY"
+echo "all downloaded libraries can be found in extras/ffmpeg folder"
+echo "thank you"

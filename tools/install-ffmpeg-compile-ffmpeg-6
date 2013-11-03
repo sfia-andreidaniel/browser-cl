@@ -1,0 +1,47 @@
+#!/bin/bash
+
+if [ $# -ne 1 ]; then echo "This is a subscript of install-ffmpeg script and is not intended to be executed manually"; exit; fi
+
+BASEDIR="$( dirname "${BASH_SOURCE[0]}" )"
+ROOTPATH=`realpath "$BASEDIR"/../extras/ffmpeg`
+export PATH=$PATH:$ROOTPATH/bin
+echo "compiling ffmpeg..."
+cd "$ROOTPATH/ffmpeg"
+
+PKG_CONFIG_PATH="$ROOTPATH/ffmpeg_build/lib/pkgconfig"
+export PKG_CONFIG_PATH
+
+echo " > configure"
+./configure --prefix="$ROOTPATH/ffmpeg_build" \
+    --extra-cflags="-I$ROOTPATH/ffmpeg_build/include" \
+    --extra-ldflags="-L$ROOTPATH/ffmpeg_build/lib" \
+    --bindir="$ROOTPATH/bin" \
+    --extra-libs="-ldl" \
+    --enable-gpl \
+    --enable-libass \
+    --enable-libfaac \
+    --enable-libopus \
+    --enable-libfdk-aac \
+    --enable-libmp3lame \
+    --enable-libopencore-amrnb \
+    --enable-libopencore-amrwb \
+    --enable-libspeex \
+    --enable-librtmp \
+    --enable-libtheora \
+    --enable-libvorbis \
+    --enable-libvpx \
+    --enable-libx264 \
+    --enable-nonfree \
+    --enable-version3 \
+    --enable-pthreads \
+    --enable-static \
+    --disable-shared
+
+echo " > make ( you can go and grab a coffee... )"
+make > /dev/null 2>&1
+echo " > install"
+make install > /dev/null 2>&1
+echo " > cleanup"
+make distclean > /dev/null 2>&1
+echo " > hash"
+hash -r

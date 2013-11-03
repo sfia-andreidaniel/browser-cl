@@ -1,0 +1,21 @@
+#!/bin/bash
+
+if [ $# -ne 1 ]; then echo "This is a subscript of install-ffmpeg script and is not intended to be executed manually"; exit; fi
+
+BASEDIR="$( dirname "${BASH_SOURCE[0]}" )"
+ROOTPATH=`realpath "$BASEDIR/../extras/ffmpeg"`
+echo "compiling yasm..."
+cd "$ROOTPATH/yasm"
+echo " > autogen"
+./autogen.sh > /dev/null 2>&1
+echo " > configure"
+./configure --prefix="$ROOTPATH/ffmpeg_build" --bindir="$ROOTPATH/bin" > /dev/null 2>&1
+echo " > make"
+make > /dev/null 2>&1
+echo " > YASM-VERSION-GEN.sh"
+./YASM-VERSION-GEN.sh > /dev/null 2>&1
+echo " > install"
+make install > /dev/null 2>&1
+echo " > cleanup"
+make distclean > /dev/null 2>&1
+echo "yasm install completed"
