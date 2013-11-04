@@ -1,0 +1,77 @@
+#!/usr/bin/nodejs
+
+function help() {
+
+    console.log( [
+        "",
+        "Transcoding cloud database settings utility",
+        "Usage: ",
+        "    db set [ host | user | pass | database ] <value>",
+        "    db show [ host | user | pass | database ]",
+        ""
+    ].join("\n") );
+    
+    process.exit(1);
+}
+
+function error( reason ) {
+    console.log( "ERROR: " + reason );
+    process.exit( 1 );
+}
+
+var propertyName = null,
+    propertyValue = null,
+    dbConf = null,
+    fs = require( 'fs' );
+
+try {
+    dbConf = JSON.parse( fs.readFileSync( __dirname + '/../conf/database.json' ) + '' );
+    if ( !( dbConf instanceof Object ) )
+        throw "The contents of the conf/database.json file is corrupted (expected object)";
+} catch ( err ) {
+    error( err );
+}
+
+switch ( true ) {
+    
+    case process.argv.length == 5 && process.argv[2] == 'set':
+        
+        if ( [ 'host', 'user', 'pass', 'database' ].indexOf( process.argv[3] ) == -1 )
+            error( "Bad database property name: " + process.argv[3] + ". Expected 'host', 'user', 'password', or 'database'" );
+
+        if ( process.argv[4] == '' )
+            error( "Expected a value!" );
+
+        propertyName = process.argv[3];
+        propertyValue = process.argv[4];
+
+
+        dbConf[ propertyName ] = propertyValue;
+
+        try {
+
+            fs.writeFileSync( __dirname + '/../conf/database.json', JSON.stringify( dbConf ), {
+                "encoding": "utf8"
+            });
+        } catch ( err ) {
+            error( "Failed to write database config file conf/database.json: " + err );
+        }
+
+        console.log("Database's \"" + propertyName + "\" property has been successfully updated to \"" + ( propertyName == 'pass' ? '<password not shown>' : propertyValue ) + "\".");
+        console.log("Please restart your api server if it's allready running...");
+        
+        break;
+    
+    case process.argv.length == 4 && process.argv[2] == 'show':
+        
+        if ( [ 'host', 'user', 'pass', 'database' ].indexOf( process.argv[3] ) == -1 )
+            error( "Bad database property name: " + process.argv[3] + ". Expected 'host', 'user', 'password', or 'database'" );
+        
+        console.log( dbConf[ process.argv[3] ] );
+        
+        break;
+    
+    default:
+        help();
+        break;
+}

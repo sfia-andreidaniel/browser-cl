@@ -1,0 +1,397 @@
+#!/usr/bin/nodejs
+
+require( __dirname + '/../lib/npm-utils.js' ).ensure_runtime( function( err ) {
+
+    if ( err ) {
+        console.log( "ERROR: Failed to start program: " + err );
+        process.exit( 1 );
+        return;
+    }
+
+    var Remoting = require( __dirname + "/../lib/remoting.js" ).Remoting;
+
+    function usage() {
+
+        console.log( [
+            "",
+            "Transcoding cloud firewall utility",
+            "Usage: firewall [ list | add <nodetype> <ip> | remove <nodetype> <ip> | apply ]",
+            "",
+            "Examples:",
+            "    firewall list",
+            "",
+            "    firewall add worker 127.0.0.1",
+            "",
+            "    firewall remove storage 127.0.0.1",
+            ""
+        ].join("\n") );
+
+        process.exit(1);
+    }
+
+    function error( reason ) {
+        console.log( "ERROR: " + ( reason || 'unknown reason' ) );
+        
+        process.exit( 2 );
+    }
+
+    // console.log( process.argv );
+
+    var cmd = null,
+        nodeType = null,
+        nodeIp = null,
+        needUpdate = false;
+
+    switch ( true ) {
+    
+        case process.argv.length < 3:
+            usage();
+            return;
+    
+        case process.argv[2] == 'list':
+            cmd = 'list';
+            break;
+    
+        case process.argv[2] == 'apply':
+            cmd = 'apply';
+            break;
+    
+        case process.argv[2] == 'add':
+        case process.argv[2] == 'remove':
+            cmd = process.argv[2];
+            if ( process.argv.length != 5 ) {
+                usage();
+                return;
+            }
+            nodeType = process.argv[3];
+            nodeIp = process.argv[4];
+            break;
+    
+        default:
+            usage();
+            return;
+    }
+
+    try {
+        var fs = require( 'fs' ),
+            nodes = JSON.parse(
+                fs.readFileSync( __dirname + '/../conf/hosts.json' )
+            );
+    
+        if ( !(nodes instanceof Array ) )
+            throw "Expected conf/hosts.json file parsed contents should be an array!";
+        
+    } catch ( err ) {
+    
+        error( err );
+    
+    }
+
+    function list() {
+    
+        if ( nodes.length == 0 ) {
+            console.log( "There are no nodes configured in the cloud" );
+            return;
+        }
+    
+        for ( var i=0, len = nodes.length; i<len; i++ ) {
+            console.log( nodes[i].type + "\t" + nodes[i].ip );
+        }
+    }
+
+    var ipExpr     = new RegExp([
+            "^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.",
+            "(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$"
+        ].join( "" ) ),
+        
+        subnetExpr = new RegExp([
+            "^(25[0-5]|2[0-4][\\d]|[01]?[\\d][\\d]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[\\d][\\d]?)\\.(25[0-5]|2[0-4][\\d]|[01]?",
+            "[\\d][\\d]?)\\.(25[0-5]|2[0-4][\\d]|[01]?[\\d][\\d]?)\\/(0|1|2|3|4|5|6|7|8|9",
+            "|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31|32)$"
+        ].join( "" ) );
+
+    function is_ip( ipAddr ) {
+        return ipExpr.test( ipAddr );
+    }
+
+    function is_subnet( ipAddr ) {
+        return subnetExpr.test( ipAddr );
+    }
+
+    function is_address( ipAddr ) {
+        return is_ip( ipAddr ) || is_subnet( ipAddr );
+    }
+
+    function save() {
+    
+        console.log("saving conf/hosts.json..." );
+        
+        try {
+            fs.writeFileSync( __dirname + '/../conf/hosts.json', JSON.stringify( nodes ), { 'encoding': 'utf8' } );
+            needUpdate = true;
+        } catch ( exception ) {
+            error("Failed to write firewall: " + exception );
+        }
+        
+    }
+
+    function add( role, ip ) {
+    
+        role = role || '';
+        ip = ip || '';
+        
+        if ( !is_address( ip ) )
+            error( "Provided string " + ip + " could not be parsed as an IPv4 IP or a IPv4 Subnet" );
+        
+        if ( [ 'api', 'worker', 'storage', 'client' ].indexOf( role ) == -1 ) {
+            error( "Allowed node types are only: api, worker, storage, or client" );
+        }
+        
+        if ( is_subnet( ip ) && !(/\/32$/.test( ip ) ) && role == 'api' )
+            error( "API node does not support a subnet notation, only an IP notation (because there can be only one api in the cloud)" );
+        
+        var found = false,
+            verb  = "is allready added";
+        
+        // Allow only one api in the configuration
+        for ( var i=0, len = nodes.length; i<len; i++ ) {
+            
+            if ( role == 'api' ) {
+                
+                if ( nodes[i].type == 'api' ) {
+                    
+                    nodes[i].ip = ip;
+                    
+                    verb = "has been replaced";
+                    
+                    found = true;
+                    
+                    break;
+                    
+                }
+                
+            } else {
+                
+                if ( nodes[i].type == 'role' && nodes[i].ip == 'ip' ) {
+                    found = true;
+                    break;
+                }
+            }
+            
+        }
+        
+        if ( found ) {
+            
+            console.log( role + " " + ( ip.indexOf( '/' ) == -1 ? "ip" : "subnet" ) + " " + ip + " " + verb + " in firewall" );
+            
+        } else {
+        
+            nodes.push( {
+                
+                "ip": ip,
+                "type": role
+                
+            } );
+        
+            console.log( role + " " + ( ip.indexOf( '/' ) == -1 ? "ip" : "subnet" ) + " " + ip + " has been added in firewall" );
+        
+        }
+        
+        save();
+    }   
+
+    function remove( role, ip ) {
+    
+        if ( role == 'api' )
+            error( "The api node cannot be removed in firewall. Use the \"add\" command instead, and an update will be made on the api address" );
+        
+        for ( var i=0, len = nodes.length; i<len; i++ ) {
+            
+            if ( nodes[i].type == role && nodes[i].ip == ip ) {
+                
+                nodes.splice( i, 1 );
+                
+                console.log( role + " " + ip + " has been successfully removed from the firewall" );
+                
+                save();
+                
+                return;
+            }
+            
+        }
+        
+        console.log( role + " " + ip + " was not found in firewall" );
+        
+    }
+
+    function applyFirewall() {
+
+        console.log( "Applying firewall..." );
+        // write the api conf/firewall.api.json
+        // containing all the storage + worker nodes...
+
+        var apiAccess = [];
+
+        for ( var i=0, len=nodes.length; i<len; i++ ) {
+            if ( [ 'worker', 'storage' ].indexOf( nodes[i].type ) >= 0 ) {
+                
+                var addIP = is_subnet( nodes[i].ip ) ? nodes[i].ip : nodes[i].ip + '/32' ;
+                
+                if ( apiAccess.indexOf( addIP ) == -1 )
+                    apiAccess.push( addIP );
+                
+            }
+        }
+    
+        console.log( "ALLOW.API     : ", apiAccess.join( ', ' ).replace( /\/32/g, '' ) );
+    
+        // write the api conf/firewall.storage.json
+        // containing the api + the worker nodes...
+        var storageAccess = [];
+        
+        for ( var i=0, len = nodes.length; i<len; i++ ) {
+            if ( [ 'api', 'worker' ].indexOf( nodes[i].type ) >= 0 ) {
+                
+                var addIP = is_subnet( nodes[i].ip ) ? nodes[i].ip : nodes[i].ip + '/32';
+                
+                if ( storageAccess.indexOf( addIP ) == -1 )
+                    storageAccess.push( addIP );
+                
+            }
+        }
+        
+        console.log( "ALLOW.STORAGE : ", storageAccess.join( ', ' ).replace( /\/32/g, '' ) );
+        
+        // write the conf/firewall.worker.json
+        // containing the api node...
+    
+        var workerAccess = [];
+    
+        for ( var i=0, len = nodes.length; i<len; i++ ) {
+            if ( nodes[i].type == 'api' ) {
+                workerAccess = [ is_subnet( nodes[i].ip ) ? nodes[i].ip : nodes[i].ip + '/32' ];
+                break;
+            }
+        }
+    
+        console.log( "ALLOW.WORKER  : ", workerAccess.join( ', ' ).replace( /\/32/g, '' ) );
+        
+        // write the conf/firewall.client.json
+        // containing the client nodes...
+        
+        var clientAccess = [];
+        
+        for ( var i=0, len = nodes.length; i<len; i++ ) {
+            if ( nodes[i].type == 'client' ) {
+                clientAccess.push( is_subnet( nodes[i].ip ) ? nodes[i].ip : nodes[i].ip + '/32' );
+            }
+        }
+        
+        console.log( "ALLOW.CLIENTS : ", clientAccess.join( ', ' ).replace( /\/32/g, '' ) );
+        
+        try {
+            
+            fs.writeFileSync( __dirname + "/../conf/firewall.api.json", JSON.stringify( apiAccess ), { 'encoding': 'utf8' } );
+            console.log( "saved conf/firewall.api.json..." );
+            
+        } catch ( err ) {
+            erorr( "Error writing conf/firewall.api.json: " + err );
+        }
+        
+        try {
+            
+            fs.writeFileSync( __dirname + "/../conf/firewall.worker.json", JSON.stringify( workerAccess ), { 'encoding': 'utf8' } );
+            console.log( "saved conf/firewall.worker.json..." );
+            
+        } catch ( err ) {
+            erorr( "Error writing conf/firewall.worker.json: " + err );
+        }
+        
+        try {
+            
+            fs.writeFileSync( __dirname + "/../conf/firewall.storage.json", JSON.stringify( storageAccess ), { 'encoding': 'utf8' } );
+            console.log( "saved conf/firewall.storage.json..." );
+            
+        } catch ( err ) {
+            erorr( "Error writing conf/firewall.storage.json: " + err );
+        }
+        
+        try {
+            
+            fs.writeFileSync( __dirname + "/../conf/firewall.client.json", JSON.stringify( clientAccess ), { 'encoding': 'utf8' } );
+            console.log( "saved conf/firewall.client.json..." );
+            
+        } catch ( err ) {
+            erorr( "Error writing conf/firewall.client.json: " + err );
+        }
+        
+        var apiIPPort = null;   
+
+        // Read the conf/listen.conf for the api address and port ...
+        
+        try {
+        
+            var lines = ( fs.readFileSync( __dirname + '/../conf/listen.conf' ) + '' ).split( "\n" );
+            
+            for ( var i=0, len = lines.length; i<len; i++ ) {
+                
+                // ignore comments ...
+                if ( /^\#/.test( lines[i] ) )
+                    continue;
+                
+                lines[i] = lines[i].split( /[\s]+/ );
+                
+                if ( lines[i].length == 3 && lines[i][0] == 'api' ) {
+                    
+                    apiIPPort = lines[i][1] + ':' + lines[i][2];
+                    
+                    break;
+                    
+                }
+                
+            }
+            
+            if ( apiIPPort === null )
+                throw "Failed to detect api ip and port ( tried to parse conf/listen.conf )";
+            
+        } catch ( err ) {
+            
+            error( "FIREWALL FLUSH FAILED: " + err );
+            
+        }
+        
+        console.log( "Sending to api " + apiIPPort + " [firewall reload signal]..." );
+    
+        var evt = new Remoting( apiIPPort );
+        
+        evt.emmit( 'reload-firewall', { "source": "firewall.js" }, function() {
+        
+            console.log( "Firewall updated in cloud" );
+        
+        }, function( reason ) {
+            error( "Failed to ack [firewall reload signal] success response from api: " + reason );
+        } );
+    
+    }
+
+    switch ( cmd ) {
+    
+        case 'list':
+            list();
+            break;
+        
+        case 'add':
+        case 'remove':
+            if ( cmd == 'add' )
+                add( nodeType, nodeIp );
+            else
+            if ( cmd == 'remove' )
+                remove( nodeType, nodeIp );
+            break;
+        
+        case 'apply':
+            applyFirewall();
+            break;
+    }
+
+});
