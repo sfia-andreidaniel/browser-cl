@@ -13,4 +13,5 @@ nodejs main.js \
     -api-address $API_ETH:$API_PORT \
     -listen $WORKER_ETH \
     -port $WORKER_PORT \
-    -data-dir /srv/www/websites/transcoder/htdocs/.worker
+    -data-dir /srv/www/websites/transcoder/htdocs/.worker \
+    -memory-limit 32MB

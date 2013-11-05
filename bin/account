@@ -12,12 +12,12 @@ require( __dirname + '/../lib/npm-utils.js' ).ensure_runtime( function( err ) {
             "",
             "Transcoding cloud user account utility",
             "Usage: ",
-            "    user list",
-            "    user add <description>",
-            "    user update <account_id> <description>",
-            "    user delete <account_id>",
-            "    user set <account_id> notification_email [<email_address>]",
-            "    user set <account_id> notification_url [<url>]",
+            "    account list",
+            "    account add <description>",
+            "    account update <account_id> <description>",
+            "    account delete <account_id>",
+            "    account set <account_id> notification_email [<email_address>]",
+            "    account set <account_id> notification_url [<url>]",
             ""
         ].join("\n") );
 

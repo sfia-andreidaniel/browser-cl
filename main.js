@@ -20,7 +20,8 @@ require( __dirname + '/lib/npm-utils.js' ).ensure_runtime( function( err ) {
         connectionUpgradeFunc = null,
         connectionUpgradeSymbiosis = null,
         controller            = null,
-        listen                = require(__dirname + '/lib/argv-utils.js' ).listen;
+        listen                = require(__dirname + '/lib/argv-utils.js' ).listen,
+        memoryLimitPerWorker  = require(__dirname + '/lib/argv-utils.js' ).memory_limit;
 
     /* Do rewrite expressions compiling */
     if ( conf.rewrite && conf.rewrite instanceof Object ) {
@@ -44,13 +45,35 @@ require( __dirname + '/lib/npm-utils.js' ).ensure_runtime( function( err ) {
 
     if ( cluster.isMaster ) {
 
+        if ( memoryLimitPerWorker >= 0 ) {
+            
+            console.log( "SERVER.memory_limit_per_cluster_node : ", memoryLimitPerWorker );
+            
+        }
+
         for ( var i=0; i<conf.workers; i++ )
             cluster.fork();
 
         cluster.on('death', function( worker ) {
-            console.log( "worker", worker.pid, "died" );
+            console.log( "CLUSTER.MASTER: worker", worker.pid, "died" );
         });
-
+        
+        if ( memoryLimitPerWorker >= 0 )
+            setTimeout( function() {
+                
+                for ( var id in cluster.workers ) {
+                    
+                    ( function( worker, worker_id ) {
+                        
+                        //var memusage = worker.process.memoryUsage();
+                        //console.log( "Worker ID=" + worker_id + " is using " + memusage.rss + " bytes of memory" );
+                        
+                    } )( cluster.workers[id], id );
+                    
+                }
+                
+            }, 10000 ).unref();
+        
         console.log( "HTTP" + (conf.https ? "S" : "" ) +".workers", conf.workers );
         // console.log( "HTTP" + (conf.https ? "S" : "" ) +".allowFom\n*", ( conf.allowFrom || [ 'none (port is still used though)' ] ).join( "\n* " ) );
         console.log( "HTTP" + (conf.https ? "S" : "" ) +".documentRoot", conf.documentRoot + "/" );

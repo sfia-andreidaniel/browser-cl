@@ -9,4 +9,5 @@ nodejs main.js \
      -listen $API_ETH \
      -port $API_PORT \
      -module api \
-     -data-dir /srv/www/websites/transcoder/htdocs/.api
+     -data-dir /srv/www/websites/transcoder/htdocs/.api \
+     -memory-limit 32MB
