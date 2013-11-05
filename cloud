@@ -73,8 +73,6 @@ require( __dirname + '/lib/npm-utils.js' ).ensure_runtime( function( err ) {
         
         if ( code )
             error("The command encountered errors while executing");
-        else
-            console.log( "\nThe command completed successfully" );
         
     } );
 } );

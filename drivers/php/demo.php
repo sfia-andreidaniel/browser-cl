@@ -31,7 +31,7 @@
     
     // And finally, we upload a file to the storage...
     var_dump( $api->storeFileByPath( '../../samplefiles/file.mp4', [
-        'apiKey' => 'cce23406fac43ad94aa6c498618d1550'
+        'apiKey' => '5b1172f03ca63ddad9e574d98fd2a341'
     ], STORAGE_API_ENGINE_PHP ) );
     
 ?>

@@ -21,7 +21,8 @@ CREATE TABLE `uploads` (
   `jobs_total`          int(11) NOT NULL DEFAULT '0',
   `file_size`           bigint(20) NOT NULL DEFAULT '0',
   `total_size`          bigint(20) NOT NULL DEFAULT '0',
-  `mime` char(32)       NOT NULL DEFAULT 'application/octet-stream',
+  `total_processing`    bigint(20) NOT NULL DEFAULT '0',
+  `mime`                char(32) NOT NULL DEFAULT 'application/octet-stream',
   PRIMARY KEY (`id`),
   KEY `account_id` (`account_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
@@ -91,12 +92,22 @@ FOR EACH ROW BEGIN
                 END; -- new - started --
                 
                 WHEN 'error' THEN BEGIN
-                    UPDATE uploads SET jobs_errors = jobs_errors + 1, jobs_completed = jobs_completed + 1 WHERE uploads.id = New.upload_id LIMIT 1;
+
+                    UPDATE uploads
+                    SET jobs_errors    = jobs_errors + 1,
+                        jobs_completed = jobs_completed + 1
+                    WHERE uploads.id = New.upload_id LIMIT 1;
+
                     SET New.ended_date = UNIX_TIMESTAMP( NOW() );
                 END; -- new - error --
                 
                 WHEN 'success' THEN BEGIN
-                    UPDATE uploads SET jobs_success = jobs_success + 1, jobs_completed = jobs_completed + 1 WHERE uploads.id = New.upload_id LIMIT 1;
+                    UPDATE uploads
+                    SET jobs_success   = jobs_success + 1,
+                        jobs_completed = jobs_completed + 1,
+                        total_size     = total_size + New.task_size
+                    WHERE uploads.id = New.upload_id LIMIT 1;
+                    
                     SET New.ended_date = UNIX_TIMESTAMP( NOW() );
                 END; -- new - success --
                 
@@ -119,13 +130,30 @@ FOR EACH ROW BEGIN
                 END; -- started - started --
                 
                 WHEN 'error' THEN BEGIN
-                    UPDATE uploads SET jobs_errors = jobs_errors + 1, jobs_completed = jobs_completed + 1 WHERE uploads.id = New.upload_id LIMIT 1;
+                    
                     SET New.ended_date = UNIX_TIMESTAMP( NOW() );
+                    
+                    UPDATE uploads
+                    SET jobs_errors    = jobs_errors + 1,
+                        jobs_completed = jobs_completed + 1,
+                        total_processing = total_processing
+                            + IF ( New.started_date > 0 AND New.ended_date > 0 AND New.ended_date > New.started_date, New.ended_date - New.started_date, 0 )
+                    WHERE uploads.id   = New.upload_id
+                    LIMIT 1;
                 END; -- started - error --
                 
                 WHEN 'success' THEN BEGIN
-                    UPDATE uploads SET jobs_success = jobs_success + 1, jobs_completed = jobs_completed + 1 WHERE uploads.id = New.upload_id LIMIT 1;
+                    
                     SET New.ended_date = UNIX_TIMESTAMP( NOW() );
+                    
+                    UPDATE uploads
+                    SET jobs_success     = jobs_success + 1,
+                        jobs_completed   = jobs_completed + 1,
+                        total_size       = total_size + New.task_size,
+                        total_processing = total_processing
+                            + IF ( New.started_date > 0 AND New.ended_date > 0 AND New.ended_date > New.started_date, New.ended_date - New.started_date, 0 )
+                    WHERE uploads.id = New.upload_id
+                    LIMIT 1;
                 END; -- started - success --
                 
             END CASE;
@@ -137,15 +165,26 @@ FOR EACH ROW BEGIN
             CASE New.status
                 
                 WHEN 'new' THEN BEGIN
-                    UPDATE uploads SET jobs_errors = jobs_errors - 1, jobs_completed = jobs_completed - 1 WHERE uploads.id = New.upload_id LIMIT 1;
+                    
                     SET New.started_date = 0;
                     SET New.ended_date = 0;
+                    
+                    UPDATE uploads
+                    SET jobs_errors = jobs_errors - 1,
+                        jobs_completed = jobs_completed - 1
+                    WHERE uploads.id = New.upload_id LIMIT 1;
                 END; -- error - new --
                 
                 WHEN 'started' THEN BEGIN
-                    UPDATE uploads SET jobs_errors = jobs_errors - 1, jobs_completed = jobs_completed - 1 WHERE uploads.id = New.upload_id LIMIT 1;
                     SET New.started_date = UNIX_TIMESTAMP( NOW() );
                     SET New.ended_date = 0;
+                    
+                    UPDATE uploads
+                    SET jobs_errors = jobs_errors - 1,
+                        jobs_completed = jobs_completed - 1
+                    WHERE uploads.id = New.upload_id
+                    LIMIT 1;
+                    
                 END; -- error - started --
                 
                 WHEN 'error' THEN BEGIN
@@ -153,8 +192,16 @@ FOR EACH ROW BEGIN
                 END; -- error - error --
                 
                 WHEN 'success' THEN BEGIN
-                    UPDATE uploads SET jobs_errors = jobs_errors - 1, jobs_success = jobs_success - 1 WHERE uploads.id = New.upload_id LIMIT 1;
+                    
                     SET New.ended_date = UNIX_TIMESTAMP( NOW() );
+                    
+                    UPDATE uploads
+                    SET jobs_errors  = jobs_errors - 1,
+                        jobs_success = jobs_success - 1,
+                        total_size   = total_size + New.task_size
+                    WHERE uploads.id = New.upload_id
+                    LIMIT 1;
+                    
                 END; -- error - success --
                 
             END CASE;
@@ -166,20 +213,42 @@ FOR EACH ROW BEGIN
             CASE New.status
                 
                 WHEN 'new' THEN BEGIN
-                    UPDATE uploads SET jobs_success = jobs_success - 1, jobs_completed = jobs_completed - 1 WHERE uploads.id = New.upload_id LIMIT 1;
+                
                     SET New.started_date = 0;
                     SET New.ended_date = 0;
+                
+                    UPDATE uploads
+                    SET jobs_success   = jobs_success - 1,
+                        jobs_completed = jobs_completed - 1,
+                        total_size     = total_size - Old.task_size
+                    WHERE uploads.id = New.upload_id
+                    LIMIT 1;
+                    
                 END; -- success - new --
                 
                 WHEN 'started' THEN BEGIN
-                    UPDATE uploads SET jobs_success = jobs_success - 1, jobs_completed = jobs_completed - 1 WHERE uploads.id = New.upload_id LIMIT 1;
+                    
+                    UPDATE uploads
+                    SET jobs_success   = jobs_success - 1,
+                        jobs_completed = jobs_completed - 1,
+                        total_size     = total_size - Old.task_size
+                    WHERE uploads.id = New.upload_id
+                    LIMIT 1;
+                    
                     SET New.started_date = UNIX_TIMESTAMP( NOW() );
                     SET New.ended_date = 0;
                 END; -- success - started --
                 
                 WHEN 'error' THEN BEGIN
-                    UPDATE uploads SET jobs_success = jobs_success - 1, jobs_errors = jobs_errors + 1 WHERE uploads.id = New.upload_id LIMIT 1;
+                    
                     SET New.ended_date = UNIX_TIMESTAMP( NOW() );
+                    
+                    UPDATE uploads
+                    SET jobs_success = jobs_success - 1,
+                        jobs_errors  = jobs_errors + 1,
+                        total_size   = total_size - Old.task_size
+                    WHERE uploads.id = New.upload_id
+                    LIMIT 1;
                 END; -- success - error --
                 
                 WHEN 'success' THEN BEGIN
@@ -235,7 +304,7 @@ FOR EACH ROW BEGIN
             );
         
         END IF;
-        
+    
     END IF;
     
 END|
@@ -259,3 +328,4 @@ FOR EACH ROW BEGIN
 END|
 
 DELIMITER ;
+
