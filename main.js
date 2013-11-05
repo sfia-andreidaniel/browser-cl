@@ -52,27 +52,24 @@ require( __dirname + '/lib/npm-utils.js' ).ensure_runtime( function( err ) {
         }
 
         for ( var i=0; i<conf.workers; i++ )
-            cluster.fork();
+            cluster.fork().on( 'disconnect', function() {
+                console.log( "MASTER: A slave process was disconnected. Respawning another slave..." );
+                cluster.fork();
+            });
 
-        cluster.on('death', function( worker ) {
-            console.log( "CLUSTER.MASTER: worker", worker.pid, "died" );
+        cluster.on('exit', function( worker, code, signal ) {
+            if ( worker.suicide === true ) {
+                
+                console.log("MASTER: slave process pid=" + worker.process.pid + " exited by it's will..." );
+                cluster.fork();
+                
+            } else {
+                if ( code != 0 ) {
+                    console.log("MASTER: slave process " + worker.process.pid + " terminated with non-zero error code: " + code + ". Server will halt!" );
+                    process.exit( 1 );
+                } else cluster.fork();
+            }
         });
-        
-        if ( memoryLimitPerWorker >= 0 )
-            setTimeout( function() {
-                
-                for ( var id in cluster.workers ) {
-                    
-                    ( function( worker, worker_id ) {
-                        
-                        //var memusage = worker.process.memoryUsage();
-                        //console.log( "Worker ID=" + worker_id + " is using " + memusage.rss + " bytes of memory" );
-                        
-                    } )( cluster.workers[id], id );
-                    
-                }
-                
-            }, 10000 ).unref();
         
         console.log( "HTTP" + (conf.https ? "S" : "" ) +".workers", conf.workers );
         // console.log( "HTTP" + (conf.https ? "S" : "" ) +".allowFom\n*", ( conf.allowFrom || [ 'none (port is still used though)' ] ).join( "\n* " ) );
@@ -112,8 +109,33 @@ require( __dirname + '/lib/npm-utils.js' ).ensure_runtime( function( err ) {
             }
             
         }
+        
+        process.on( 'message', function( message ) {
+            console.log( "Master: message: ", message );
+        } );
     
     } else {
+        
+        // Report memory statistics to the master thread
+        if ( memoryLimitPerWorker > 0 ) {
+            
+            setInterval( function() {
+                var mem = process.memoryUsage();
+                
+                if ( mem.rss > memoryLimitPerWorker ) {
+                    console.log( "Process #" + process.pid + " allocated more memory than it is allowed (with " + memoryLimitPerWorker - mem.rss + " bytes)." );
+                    console.log( "The process will now exit, and the master process will respawn another worker..." );
+                    process.disconnect();
+                } else {
+                    
+                    var free = parseFloat( ( ( memoryLimitPerWorker - mem.rss ) / ( 1024 * 1024 ) ).toFixed(2) );
+                    
+                    if ( free < 16 )
+                        console.log( "WARNING: " + free + "MB of ram are free. The slave will restart soon!" );
+                }
+                
+            }, 5000 ).unref();
+        }
     
         if ( conf.modules && conf.modules.length ) {
             

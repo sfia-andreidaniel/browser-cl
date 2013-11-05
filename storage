@@ -15,4 +15,4 @@ nodejs main.js \
     -port $STORAGE_PORT \
     -data-dir /srv/www/websites/transcoder/htdocs/.storage \
     -www "http://storage01:80/" \
-    -memory-limit 32MB
+    -memory-limit 512MB

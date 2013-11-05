@@ -14,4 +14,4 @@ nodejs main.js \
     -listen $WORKER_ETH \
     -port $WORKER_PORT \
     -data-dir /srv/www/websites/transcoder/htdocs/.worker \
-    -memory-limit 32MB
+    -memory-limit 512MB

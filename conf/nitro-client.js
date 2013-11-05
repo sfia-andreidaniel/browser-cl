@@ -33,11 +33,11 @@ exports.workers = arg_utils.workers;
 exports.modules = arg_utils.modules || [];
 
 exports.rewrite = {
-    
+    /*
     // Crontab management
     "^\\/crontab\\/([\\da-f]{32})$" : "/crontab/index.js?do=show&job=${1}",
     "^\\/crontab\\/remove\\/([\\da-f]{32})$": "/crontab/index.js?do=remove&job=${1}"
-
+    */
 };
 
 /* Custom arguments passed from the command line parser ... */
