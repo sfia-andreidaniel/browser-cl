@@ -1,0 +1,80 @@
+#!/usr/local/bin/nodejs
+
+function error( reason ) {
+    console.log("ERROR: " + ( reason || "unknown reason" ) );
+    process.exit( 1 );
+}
+
+function help() {
+    
+    console.log([
+            "",
+            "Transcoding cloud management utility.",
+            "",
+            "Usage: ",
+            "",
+            "    cloud account ",
+            "",
+            "    cloud db",
+            "",
+            "    cloud firewall",
+            "",
+            "    cloud network",
+            "",
+            ""
+        ].join("\n")
+    );
+    
+    process.exit( 1 );
+}
+
+require( __dirname + '/lib/npm-utils.js' ).ensure_runtime( function( err ) {
+    
+    if ( err )
+        error( err );
+    
+    if ( process.argv.length < 3 )
+        help();
+    
+    if ( [ 'account', 'db', 'firewall', 'network' ].indexOf( process.argv[2] ) == -1 )
+        error( "Invalid command: " + process.argv[2] );
+    
+    var command = process.argv[2],
+        spawn   = require( 'child_process' ).spawn,
+        proc    = null,
+        args    = [],
+        bin     = null;
+    
+    for ( var i=3; i<process.argv.length; i++ )
+        args.push( process.argv[i] );
+    
+    switch( process.argv[2] ) {
+        
+        case 'account':
+        case 'db':
+        case 'firewall':
+        case 'network':
+            bin = __dirname + '/bin/' + process.argv[2];
+            break;
+        
+    }
+    
+    proc = spawn( bin, args );
+    
+    proc.stdout.on( 'data', function( data ) {
+        process.stdout.write( data );
+    });
+    
+    proc.stderr.on( 'data', function( data ) {
+        process.stderr.write( data );
+    });
+    
+    proc.on( 'exit', function(code) {
+        
+        if ( code )
+            error("The command encountered errors while executing");
+        else
+            console.log( "\nThe command completed successfully" );
+        
+    } );
+} );

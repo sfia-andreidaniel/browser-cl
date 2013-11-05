@@ -1,4 +1,4 @@
-#!/usr/bin/nodejs
+#!/usr/local/bin/nodejs
 
 function help() {
 
@@ -8,6 +8,7 @@ function help() {
         "Usage: ",
         "    db set [ host | user | pass | database ] <value>",
         "    db show [ host | user | pass | database ]",
+        "    db install host=<host> user=<user> pass=<pass> database=<database>",
         ""
     ].join("\n") );
     
@@ -68,6 +69,168 @@ switch ( true ) {
             error( "Bad database property name: " + process.argv[3] + ". Expected 'host', 'user', 'password', or 'database'" );
         
         console.log( dbConf[ process.argv[3] ] );
+        
+        break;
+    
+    case process.argv.length == 7 && process.argv[2] == 'install':
+        
+        var spawn = require('child_process').spawn,
+            proc  = null,
+            
+            host  = null,
+            user  = null,
+            pass  = null,
+            db    = null,
+            
+            which = require( __dirname + '/../lib/osutils.js' ).which,
+            async = require( __dirname + '/../lib/async.js' ).Async,
+            
+            matches;
+        
+        for ( var i=3; i<7; i++ ) {
+            
+            if ( !!( matches = /^(host|user|pass|database)\=([^*]+)$/.exec( process.argv[i] ) ) ) {
+                
+                switch ( matches[1] ) {
+                    case 'host':
+                        host = matches[2];
+                        break;
+                    case 'user':
+                        user = matches[2];
+                        break;
+                    case 'pass':
+                        pass = matches[2];
+                        break;
+                    case 'database':
+                        db = matches[2];
+                        break;
+                }
+            }
+        }
+        
+        host = ( host || '' ).replace( /(^[\s]+|[\s]+$)/g, '' );
+        user = ( user || '' ).replace( /(^[\s]+|[\s]+$)/g, '' );
+        pass = ( pass || '' ).replace( /(^[\s]+|[\s]+$)/g, '' );
+        db   = ( db   || '' ).replace( /(^[\s]+|[\s]+$)/g, '' );
+        
+        if ( !host )
+            error("Please specify a database host first!");
+        
+        if ( !user )
+            error("Please specifiy a database user first!");
+        
+        if ( !pass )
+            error("Please specify a database password first!");
+        
+        if ( !db )
+            error("Please specify a database name first!" );
+        
+        // read conf/database.sql file
+        
+        try {
+            
+            var sql = fs.readFileSync( __dirname + '/../conf/database.sql' ) + '';
+            
+            if ( sql == '' )
+                throw "The conf/databse.sql file is empty";
+            
+            sql = sql.replace( /\$DB\$/g, db );
+            
+        } catch ( err ) {
+            error("Failed reading conf/database.sql file used to create the database: " + err );
+        }
+
+        var tasker = new async(),
+            mysqlcli = null;
+        
+        tasker.sync( function() {
+            
+            ( function( task ) {
+                
+                console.log( "Searching for mysql client..." );
+                
+                which( 'mysql', function( err, path ) {
+                
+                    if ( err )
+                        task.on( 'error', 'mysql command was not found in your system. please install it first' );
+                    else {
+                        mysqlcli = path;
+                        console.log( "mysql client found in: " + path );
+                        task.on( 'success' );
+                    }
+                        
+                });
+            })( this );
+                
+        } );
+        
+        tasker.sync( function() {
+            
+            ( function( task ) {
+            
+                proc = spawn( mysqlcli, [ '--user=' + user, '--host=' + host, '--password=' + pass ] );
+                
+                proc.stdout.on( 'data', function( data ) { 
+                    process.stdout.write( data + '' );
+                } );
+                
+                proc.stderr.on( 'data', function( data ) {
+                    process.stderr.write( data + '' );
+                } );
+                
+                proc.on( 'close', function( code ) {
+                    
+                    if ( code == 0 )
+                        task.on( 'success' );
+                        
+                    else
+                        task.on( 'error', 'mysql process exited with non-zero code ( ' + code + ' )' );
+                    
+                } );
+            
+                proc.stdin.write( sql );
+
+                proc.stdin.end();
+                
+            } )( this );
+            
+        } );
+
+        tasker.sync( function() {
+            
+            ( function( task ) {
+                
+                try {
+                    
+                    fs.writeFileSync( __dirname + '/../conf/database.json', JSON.stringify({
+                        "host": host,
+                        "user": user,
+                        "database": db,
+                        "pass": pass
+                    }));
+                    
+                    console.log( "\nThe conf/database.json file successfully updated." );
+                    console.log( "Changes will take effect on the api server after restarting it\n" );
+                    
+                    task.on( 'success' );
+                
+                } catch ( err ) {
+                    
+                    task.on( 'error', "Failed to write conf/database.json file: " + err );
+                    
+                }
+                
+            })( this );
+            
+        } );
+
+        tasker.run( function() {
+            console.log( "The database has been successfully installed" );
+        }, function( reason ) {
+            error( "Failed to install database: " + ( reason || "unknown reason" ) );
+        } );
+
+        // console.log( sql );
         
         break;
     
