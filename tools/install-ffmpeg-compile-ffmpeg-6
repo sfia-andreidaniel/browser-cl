@@ -35,7 +35,12 @@ echo " > configure"
     --enable-version3 \
     --enable-pthreads \
     --enable-static \
-    --disable-shared
+    --disable-shared \
+    --disable-ffserver \
+    --disable-doc \
+    --enable-postproc \
+    --enable-memalign-hack \
+    --disable-debug
 
 echo " > make ( you can go and grab a coffee... )"
 make > /dev/null 2>&1
