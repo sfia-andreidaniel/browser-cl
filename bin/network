@@ -1,5 +1,7 @@
 #!/usr/local/bin/nodejs
 
+var integer = require( __dirname + '/../lib/math.js' ).integer;
+
 require( __dirname + '/../lib/npm-utils.js' ).ensure_runtime( function( err ) {
 
     if ( err ) {
@@ -46,7 +48,7 @@ require( __dirname + '/../lib/npm-utils.js' ).ensure_runtime( function( err ) {
     }
 
     function is_port( value ) {
-        value = ~~value;
+        value = integer( value );
     
         if ( value < 1 || value > 65534 )
             return false;

@@ -21,7 +21,9 @@ require( __dirname + '/lib/npm-utils.js' ).ensure_runtime( function( err ) {
         connectionUpgradeSymbiosis = null,
         controller            = null,
         listen                = require(__dirname + '/lib/argv-utils.js' ).listen,
-        memoryLimitPerWorker  = require(__dirname + '/lib/argv-utils.js' ).memory_limit;
+        memoryLimitPerWorker  = require(__dirname + '/lib/argv-utils.js' ).memory_limit,
+        btostr                = require(__dirname + '/lib/osutils.js' ).btostr,
+        strtob                = require(__dirname + '/lib/osutils.js' ).strtob;
 
     /* Do rewrite expressions compiling */
     if ( conf.rewrite && conf.rewrite instanceof Object ) {
@@ -123,7 +125,7 @@ require( __dirname + '/lib/npm-utils.js' ).ensure_runtime( function( err ) {
                 var mem = process.memoryUsage();
                 
                 if ( mem.rss > memoryLimitPerWorker ) {
-                    console.log( "Process #" + process.pid + " allocated more memory than it is allowed (with " + memoryLimitPerWorker - mem.rss + " bytes)." );
+                    console.log( "Process #" + process.pid + " allocated more memory than it is allowed ( with " + btostr( memoryLimitPerWorker - mem.rss ) + " )." );
                     console.log( "The process will now exit, and the master process will respawn another worker..." );
                     process.disconnect();
                 } else {
@@ -131,7 +133,7 @@ require( __dirname + '/lib/npm-utils.js' ).ensure_runtime( function( err ) {
                     var free = parseFloat( ( ( memoryLimitPerWorker - mem.rss ) / ( 1024 * 1024 ) ).toFixed(2) );
                     
                     if ( free < 16 )
-                        console.log( "WARNING: " + free + "MB of ram are free. The slave will restart soon!" );
+                        console.log( "WARNING: " + btostr( free ) + " ram free. The slave will restart soon!" );
                 }
                 
             }, 5000 ).unref();

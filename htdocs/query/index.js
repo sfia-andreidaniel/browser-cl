@@ -1,7 +1,8 @@
-var fs = require('fs'),
-    Async = require( __dirname + "/../../lib/async.js" ).Async,
-    Query = require( __dirname + "/../../lib/registry.js").JobsCollection,
-    SocketUtils = require( __dirname + '/../../lib/socket-utils.js' );
+var fs          = require('fs'),
+    Async       = require( __dirname + "/../../lib/async.js" ).Async,
+    Query       = require( __dirname + "/../../lib/registry.js").JobsCollection,
+    SocketUtils = require( __dirname + '/../../lib/socket-utils.js' ),
+    integer     = require( __dirname + '/../../lib/math.js' ).integer;
 
 
 exports.handle = function( response, request, urlInfo, controller ) {
@@ -40,8 +41,8 @@ exports.handle = function( response, request, urlInfo, controller ) {
     } else {
         
         var q      = urlInfo.q + "",
-            skip   = ~~urlInfo.skip,
-            limit  = ~~urlInfo.limit,
+            skip   = integer( urlInfo.skip ),
+            limit  = integer( urlInfo.limit ),
             tasker = new Async(),
             out    = [];
         

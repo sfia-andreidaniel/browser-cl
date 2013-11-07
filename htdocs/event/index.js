@@ -3,6 +3,25 @@ var SocketUtils = require( __dirname + '/../../lib/socket-utils.js' );
 /* Events are allowed to run only from specific paths */
 
 exports.handle = function( response, request, urlInfo, controller ) {
+
+    var errorSent = false;
+
+    response.sendError = function( reason ) {
+        if ( errorSent )
+            return;
+            
+        try {
+            response.write( JSON.stringify({
+                "error": true,
+                "reason": ( reason + "" ) || "unknown reason"
+            }) );
+            response.end();
+        } catch ( e ) {
+            console.log( "ERROR sending response back to event: " + e );
+        }
+        errorSent = true;
+    }
+
     /* Firewall */
 
     var allowRequest = SocketUtils.firewall4( SocketUtils.getFirewallList( controller.isA ), request.socket.remoteAddress );
@@ -11,8 +30,7 @@ exports.handle = function( response, request, urlInfo, controller ) {
 
         console.log( "Firewall (" + controller.isA + "): Request rejected for " + request.socket.remoteAddress + " on resource: '/event/'" );
 
-        response.write( 'forbidden' );
-        response.end();
+        response.sendError( 'forbidden' );
         return;
 
     }
@@ -23,10 +41,7 @@ exports.handle = function( response, request, urlInfo, controller ) {
     
     if ( !eventName ) {
         
-        response.write( JSON.stringify({
-            "error": true,
-            "reason": "Which event?"
-        }) );
+        response.sendError( 'which event?' );
         
         return;
         
@@ -37,11 +52,7 @@ exports.handle = function( response, request, urlInfo, controller ) {
         try {
             data = JSON.parse( data );
         } catch ( e ) {
-            response.write( JSON.stringify({
-                "error": true,
-                "reason": "Unserializeable request data"
-            }));
-            
+            response.sendError( "Unserializeable request data" );
             return;
         }
         
@@ -52,11 +63,7 @@ exports.handle = function( response, request, urlInfo, controller ) {
             
             controller.on( eventName, data );
         } catch ( e ) {
-            response.write( JSON.stringify({
-                "error": true,
-                "reason": e + ""
-            }) );
-            response.end();
+            response.sendError( e + '' );
         }
     }
     

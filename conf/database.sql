@@ -24,7 +24,7 @@ CREATE TABLE `uploads` (
   `file_size`            BIGINT       UNSIGNED NOT NULL DEFAULT 0,
   `total_size`           BIGINT       UNSIGNED NOT NULL DEFAULT 0,
   `total_processing`     INT          UNSIGNED NOT NULL DEFAULT '0',
-  `mime`                 char(32)              NOT NULL DEFAULT 'application/octet-stream',
+  `mime`                 CHAR(32)              NOT NULL DEFAULT 'application/octet-stream',
   PRIMARY KEY (`id`),
   KEY `account_id` (`account_id`),
   KEY `storage_address_ip` (`storage_address_ip`,`storage_address_port`)
@@ -40,7 +40,7 @@ CREATE TABLE `uploads_tasks` (
   `task_type`           ENUM ('video','audio','image')  DEFAULT NULL,
   `task_preset`         CHAR(32)               NOT NULL DEFAULT '',
   `task_size`           BIGINT        UNSIGNED NOT NULL DEFAULT 0,
-  `task_extension`      CHAR                   NOT NULL DEFAULT '',
+  `task_extension`      CHAR(16)               NOT NULL DEFAULT '',
   `task_priority`       INT           UNSIGNED NOT NULL DEFAULT 0,
   `task_started_by`     CHAR(21)               NOT NULL DEFAULT '',
   PRIMARY KEY (`id`),

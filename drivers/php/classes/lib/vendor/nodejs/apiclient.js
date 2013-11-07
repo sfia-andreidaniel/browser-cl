@@ -12,9 +12,10 @@ var conf = {
     "options": null
 };
 
-var fs = require( 'fs' ),
-    async = require( __dirname + '/lib/async.js' ).Async,
-    thing = require( __dirname + '/lib/thing.js' ).Thing;
+var fs      = require( 'fs' ),
+    async   = require( __dirname + '/lib/async.js' ).Async,
+    thing   = require( __dirname + '/lib/thing.js' ).Thing,
+    integer = require( __dirname + '/lib/math.js' ).integer;
 
 // All errors are dumped to stdout, in json format
 function error( reason ) {
@@ -49,7 +50,7 @@ for( var i=2, len = process.argv.length; i<len; i++ ) {
             break;
         case '--port':
             if ( i < len - 1 ) {
-                conf.port = ~~process.argv[i + 1];
+                conf.port = integer( process.argv[i + 1] );
                 i++;
             } else
                 error("Unterminated port argument!");
@@ -278,7 +279,7 @@ eventer.bind( 'frame', function( frameData ) {
                     eventer.on( 'error', "Transfer error. Server acked " + frameData.got + ", expected " + lastReadLength );
                 } else {
                     
-                    var prog = ~~( numRead / ( filePacket.size / 100 ) );
+                    var prog = integer( numRead / ( filePacket.size / 100 ) );
                     
                     if ( prog != lastPercent ) {
                         lastPercent = prog;

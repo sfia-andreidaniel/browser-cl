@@ -216,7 +216,7 @@
                     if ( !isset( $ack['got'] ) || $ack['got'] != strlen( $buffer ) )
                         throw new Exception( "Transfer error!");
                     
-                    $currentProgress = ~~( $numRead / ( $totalSize / 100 ) );
+                    $currentProgress = (int)( $numRead / ( $totalSize / 100 ) );
                     
                     if ( $currentProgress != $lastProgress ) {
                         $lastProgress = $currentProgress;
