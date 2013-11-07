@@ -1,4 +1,4 @@
-#!/usr/bin/nodejs
+#!/usr/local/bin/nodejs
 
 function help() {
 
