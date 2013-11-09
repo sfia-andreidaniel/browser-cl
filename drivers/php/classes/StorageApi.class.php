@@ -165,7 +165,7 @@
                     $filePacket[ 'options' ] = $options;
                 
                 $ws->sendMessage( WebSocketMessage::create( json_encode( $filePacket ) ) );
-                
+
                 // Read acknowledge packet
                 
                 $ack = $ws->readMessage();
