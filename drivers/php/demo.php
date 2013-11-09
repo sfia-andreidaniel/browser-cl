@@ -31,7 +31,13 @@
     
     // And finally, we upload a file to the storage...
     var_dump( $api->storeFileByPath( '../../samplefiles/file.mp4', [
-        'apiKey' => '432d79278f3c09f83c3811c1536ad0fb'
+        'apiKey' => 'a33879cd32bdd32c0cf97921a6e3dfb0',
+        'formats' => [
+            'only' => [
+                '240p.mp4',
+                'webm'
+            ]
+        ]
     ], STORAGE_API_ENGINE_NODEJS ) );
     
 ?>

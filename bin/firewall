@@ -1,4 +1,4 @@
-#!/usr/local/bin/nodejs
+#!/usr/bin/nodejs
 
 require( __dirname + '/../lib/npm-utils.js' ).ensure_runtime( function( err ) {
 

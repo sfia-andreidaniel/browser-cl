@@ -1,4 +1,4 @@
-#!/usr/local/bin/nodejs
+#!/usr/bin/nodejs
 
 var integer = require( __dirname + '/../lib/math.js' ).integer;
 
