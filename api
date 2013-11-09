@@ -10,4 +10,5 @@ nodejs main.js \
      -port $API_PORT \
      -module api \
      -data-dir /srv/www/websites/transcoder/htdocs/.api \
-     -memory-limit 512MB
+     -memory-limit 512MB \
+     -max-connections 1
