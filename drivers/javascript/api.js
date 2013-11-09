@@ -1,4 +1,74 @@
-var Thing = require( __dirname + '/thing.js' ).Thing;
+window.StorageApi = ( function() {
+
+var Thing = function() {
+    
+    var events      = {},
+        intervals   = {},
+        me          = this;
+    
+    /* Event listeners interface */
+    
+    me.bind = function (eventName, handlerFunction ) {
+        events[ eventName ] = events[ eventName ] || [];
+        events[ eventName ].push( handlerFunction );
+    }
+    
+    me.blind = function( handlerFunction ) {
+        events[ '*' ] = events[ '*' ] || [];
+        events[ '*' ].push( handlerFunction );
+    }
+    
+    me.on = function( eventName, eventData ) {
+        if (events[ eventName ] instanceof Array ) {
+            for ( var i=0, len = events[eventName].length; i<len; i++ ) {
+                if ( events[ eventName ][i]( eventData ) === false ) {
+                    return false;
+                    break;
+                }
+            }
+        }
+        
+        else
+        
+        if ( events[ '*' ] instanceof Array ) {
+            for ( var i=0, len = events['*'].length; i<len; i++ ) {
+                if ( events[ '*' ][i]( eventData ) === false ) {
+                    return false;
+                    break;
+                }
+            }
+        }
+        
+        return true;
+    }
+    
+    me.remove = function( eventName, handlerFunction ) {
+        handlerFunction = handlerFunction || null;
+        if ( events[ eventName ] instanceof Array ) {
+            if ( !handlerFunction ) {
+                delete events[ eventName ];
+            } else {
+                for ( var i=0, len=events[ eventName ].length; i<len; i++ ) {
+                    if ( events[ eventName ][i] == handlerFunction ) {
+                        events[eventName].splice( i, 1 );
+                        return true;
+                    }
+                }
+            }
+        }
+        return true;
+    }
+    
+    me.interval = function( intervalName, intervalFunction, durationMs ) {
+        
+        if ( typeof intervals[ intervalName ] != 'undefined' )
+            throw "Failed to register interval!";
+        
+        intervals[ intervalName ] = setInterval( intervalFunction, durationMs ).unref();
+    }
+    
+    return me;
+}
 
 var TasksGroup = function( init ) {
     
@@ -150,9 +220,12 @@ var Task = function( async, index, callback, success, error, taskOwner ) {
                 )
             )
         )
-            myGroup && myGroup.last
-                ? myGroup.last.next.on( 'start' )
-                : me.next.on( 'start' );
+            setTimeout( function() {
+                myGroup && myGroup.last
+                    ? myGroup.last.next.on( 'start' )
+                    : me.next.on( 'start' );
+                
+            }, 10 );
 
         else
 
@@ -465,143 +538,300 @@ var Async = function( ) {
     return me;
 };
 
-/*
+function StorageApi( apiHostNameAndPort ) {
+    
+    var _apiPort = 8080,
+        _apiHost = null,
+        _events  = {},
+        _priv    = {},
+        api      = this;
+    
+    this.bind = function( eventName, eventHandler ) {
+        _events[ eventName ] = _events[ eventName ] || [];
+        _events[ eventName ].push( eventHandler );
+    };
+    
+    this.on = function( eventName, eventData ) {
 
-( new Async() )
-    .sync( function() {
-                
-                ( function (task) {
-                    
-                    console.log( "Run async callback, task 0" );
-                    
-                    setTimeout( function() {
-                        task.on( 'success', "Success  in task 0" );
-                    }, 3000 );
-                    
-                })( this );
-                
-            },
-            function( data ) {
-                
-                console.log( "Task 0: Success callback exec: ", data );
-                
-            },
-            function( error ) {
-                
-                console.log( "Task 0: Error callback exec: ", error );
-                
-            }
-    )
-    .sync( function() {
-                
-                ( function (task) {
-                    
-                    console.log( "Run async callback, task 1" );
-                    
-                    setTimeout( function() {
-                        task.on( 'success', "Yes, all went fine in task 1" );
-                    }, 1000 );
-                    
-                })( this );
-                
-            },
-            function( data ) {
-                
-                console.log( "Task 1: Success callback exec: ", data );
-                
-            },
-            function( error ) {
-                
-                console.log( "Task 1: Error callback exec: ", error );
-                
-            }
-    )
-    .sync( function() {
-                
-                ( function (task) {
-                    
-                    console.log( "Run sync callback, task 2" );
-                    
-                    task.on('success', "Yes, went fine in task 2" );
-                    
-                })( this );
-                
-            },
-            function( data ) {
-                
-                console.log( "Task 2: Success callback exec: ", data );
-                
-            },
-            function( error ) {
-                
-                console.log( "Task 2: Error callback exec: ", error );
-                
-            }
-    )
-    .sync( function() {
-                
-                ( function (task) {
-                    
-                    console.log( "Run async callback, task 3" );
-                    
-                    setTimeout( function() {
-                        task.on( 'success', "Success  in task 3" );
-                    }, 3000 );
-                    
-                })( this );
-                
-            },
-            function( data ) {
-                
-                console.log( "Task 3: Success callback exec: ", data );
-                
-            },
-            function( error ) {
-                
-                console.log( "Task 3: Error callback exec: ", error );
-                
-            }
-    )
-    .sync( function() {
-                
-                ( function (task) {
-                    
-                    console.log( "Run async callback, task 4" );
-                    
-                    setTimeout( function() {
-                        task.on( 'success', "Something went wrong in task 4" );
-                    }, 1000 );
-                    
-                })( this );
-                
-            },
-            function( data ) {
-                
-                console.log( "Task 4: Success callback exec: ", data );
-                
-            },
-            function( error ) {
-                
-                console.log( "Task 4: Error callback exec: ", error );
-                
-            }
-    )
-    .run(   function() {
-                
-                console.log( "Final result: Success" );
-                
-            },
-            function() {
+        if ( !_events[ eventName ] )
+            return true;
+        
+        for ( var i=0, len = _events[ eventName ].length; i<len; i++ ) {
+            if ( _events[ eventName ][i]( eventData ) === false )
+                return false;
+        }
+        
+        return true;
+    };
+    
+    _priv.testFrame = function( frameData ) {
+        if ( frameData && typeof frameData.ok != 'undefined' && frameData.ok === false ) {
+            throw ( frameData.reason && frameData.error ) ? frameData.reason : "unknown api error";
+        }
+        return frameData;
+    }
+    
+    this.storeFile = function( HTML5File, options, callback ) {
+        
+        callback = callback || function( err, data ) {
             
-                console.log( "Final result: Error" );
+            console.log( "callback: ", err, data );
             
+            if ( err ) {
+                api.on( 'error', err );
+            } else {
+                api.on( 'complete', data );
             }
-            //,
-            // function() {
-            //    console.log( "All tasks completed" );
-            // }
-    );
+            
+        }
+        
+        var eventer = new Thing(),
+            tasker  = new Async(),
+            filePacket = null,
+            numRead = 0,
+            lastPercent = 0,
+            successPacket = null,
+            fileName = HTML5File.name,
+            connection = null,
+            maxBufferSize = 64000,
+            readNext = 0,
+            fileSize = HTML5File.size,
+            connection = null,
+            reader = null,
+            byteStart = 0,
+            byteStop = 0,
+            lastReadLength = 0;
+        
+        eventer.bind( 'error', function( reason ) {
+            tasker.currentTask.on( 'error', reason );
+        } );
+        
+        eventer.bind( 'stat-file', function() {
+            
+            api.on( 'status', 'checking file...' );
+            
+            if ( !HTML5File.size ) {
+                eventer.on( 'error', "Cannot upload zero-bytes files" );
+            }
+            
+            filePacket = {
+                "name": fileName,
+                "size": HTML5File.size
+            };
+            
+            if ( options )
+                filePacket.options = options;
+            
+            api.on( 'status', 'Api send packet: ' + JSON.stringify( filePacket ) );
+            
+            tasker.currentTask.on( 'success' );
+            
+        } );
+        
+        eventer.bind( 'transfer-file', function() {
+            
+            // api.on( 'status', 'opening connection to the server...' );
+            
+            connection = new WebSocket( 'ws://' + _apiHost + ':' + _apiPort + '/api/', [ 'api' ] );
+        
+            connection.onopen = function() {
 
-*/
+                api.on( 'status', 'connected to api' );
+                
+                // api.on( 'status', 'sent file packet!' );
+                connection.send( JSON.stringify( filePacket ) );
 
-exports.Async = Async;
+            };
+        
+            connection.onmessage = function(evt) {
+                
+                // api.on( 'status', 'frame: ' + evt.data );
+                
+                try {
+                    
+                    var frame = JSON.parse( evt.data );
+                    
+                    eventer.on( 'frame', frame );
+                    
+                } catch ( error ) {
+                    
+                    eventer.on( 'error', "Failed to process frame: " + error );
+                    
+                }
+            };
+            
+            connection.onclose = function() {
+                api.on( 'status', 'connection to api has been closed' );
+            };
+            
+            connection.onerror = function( error ) {
+                eventer.on( 'error', "connection error: " + error );
+            };
+        } );
+        
+        reader = new FileReader();
+        
+        reader.onloadend = function( evt ) {
+            if ( evt.target.readyState == FileReader.DONE ) {
+            
+                //console.log('status', "Sending: " + evt.target.result.byteLength + " bytes of type " + ( typeof evt.target.result ) );
+                connection.send( evt.target.result );
+                numRead += ( lastReadLength = evt.target.result.byteLength );
+            }
+        };
+                
+        var fread = function() {
+            if ( numRead < fileSize - 1 ) {
+                
+                byteStart = numRead;
+                byteStop  = byteStart + maxBufferSize;
+                
+                if ( byteStop >= fileSize )
+                    byteStop = fileSize;
+                
+                // console.log( 'status', "Reading: " + ( byteStop - byteStart ) + " bytes (" + byteStart + " .. " + byteStop + ")" );
+                
+                reader.readAsArrayBuffer( HTML5File.slice( byteStart, byteStop ) );
+                
+            }
+        };
+        
+        eventer.bind( 'frame', function( frameData ) {
+            
+            frameData = frameData || {};
+            
+            if ( frameData.error ) {
+                eventer.on( 'error', frameData.reason || 'unknown reason' );
+                return;
+            }
+            
+            //api.on( 'status', 'tasker.currentPhase is in: ' + tasker.currentPhase );
+            
+            switch ( tasker.currentPhase ) {
+                
+                case 'transfer-file':
+                
+                    if ( frameData.ack && frameData.phase == 'transfer' ) {
+                        
+                        if ( numRead == 0 )
+                            api.on( 'status', 'starting to transfer file' );
+                        
+                        if ( byteStop >= 0 && byteStop < fileSize )
+                            fread();
+                        
+                        if ( frameData.got && frameData.got != lastReadLength )
+                            eventer.on( 'error', "Transfer error. Server acked " + frameData.got + ", expected " + lastReadLength );
+                        else {
+                            var prog = Math.floor( numRead / ( fileSize / 100 ) );
+                            if ( prog != lastPercent ) {
+                                lastPercent = prog;
+                                api.on( 'progress', prog );
+                            }
+                        }
+
+                    } else {
+                        
+                        // we're having a success frame?
+                        
+                        if ( frameData.name && frameData.size ) {
+                            if ( frameData.size != fileSize ) {
+                                eventer.on( 'error', "Api file transfer size mismatch. Api got: " + frameData.size + ", expected: " + fileSize );
+                            } else {
+                                successPacket = frameData;
+                                tasker.currentTask.on( 'success', frameData );
+                            }
+                        }
+                    }
+                
+                    break;
+                
+                default:
+                    eventer.on( 'error', 'unknown frame logic' );
+                    break;
+                
+            }
+            
+        } );
+        
+        tasker.sync( function() {
+            
+            ( function( task ) {
+                
+                tasker.currentTask = task;
+
+                eventer.on( tasker.currentPhase = 'stat-file' );
+                
+            } )( this );
+            
+        } );
+        
+        tasker.sync( function() {
+            
+            ( function( task ) {
+                
+                tasker.currentTask = task;
+                
+                eventer.on( tasker.currentPhase = 'transfer-file' );
+                
+            } )( this );
+            
+        } );
+        
+        tasker.run( function() {
+            
+            api.on( 'status', "file transfer completed successfully" );
+            
+            callback(false, successPacket );
+            
+        }, function( reason ){
+            
+            api.on( 'error', "file transfer failed: " + reason );
+            
+            callback( reason || 'unknown error' );
+            
+        }, function() {
+            
+            if ( connection ) {
+                
+                try {
+                    connection.close();
+                } catch ( e ) {
+                    api.on( 'error', 'failed to close connection: ' + e );
+                }
+                
+            }
+            
+            api.on( 'status', 'all pending operations completed' );
+            
+        } );
+        
+        this.on( "status", "Using javascript driver..." );
+        
+        
+    }
+    
+    this.__construct = function( apiHostNameAndPort ) {
+    
+        var matches;
+        
+        apiHostNameAndPort = apiHostNameAndPort || '';
+        
+        if ( !( matches = /^([\S]+)\:([\d]+)$/.exec( apiHostNameAndPort ) ) ) {
+            _apiHost = apiHostNameAndPort;
+        } else {
+            _apiHost = matches[1];
+            _apiPort = ~~matches[2];
+            
+            if ( _apiPort < 1 || _apiPort > 65534 )
+                throw "Invalid api port (" + _apiPort + ")";
+        }
+    };
+    
+    this.__construct( apiHostNameAndPort );
+    
+    return this;
+}
+
+return StorageApi;
+
+})();

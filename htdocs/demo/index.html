@@ -1,0 +1,123 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+
+    <script type="text/javascript">%api.js%</script>
+
+    <script type="text/javascript">
+    
+        var api       = new StorageApi( 'localhost:8080' ),
+            file      = null,
+            apiKey    = 'a33879cd32bdd32c0cf97921a6e3dfb0';
+
+        function log() {
+                
+            var line = [];
+            
+            for ( var i=0, len = arguments.length; i < len; i++ ) { // >
+                
+                if ( typeof arguments[i] == 'string' )
+                    line.push( arguments[i] );
+                else
+                    line.push( JSON.stringify( arguments[i] ) );
+                
+            }
+            
+            document.getElementById('status').value += ( line.join( " " ) + "\n" );
+            
+        };
+
+        function initialize() {
+            
+            log( '[demo] initialized...' );
+            
+            document.getElementById( 'key' ).oninput = function() {
+                apiKey = this.value;
+            };
+
+            document.getElementById( "go" ).onclick = function() {
+                start();
+            };
+            
+            document.getElementById( 'file' ).onchange = function(evt) {
+
+                var files = evt.target.files;
+                
+                if ( files.length )
+                    file = files[0];
+                
+                log( "[demo]", "selected file: " + file.name );
+            };
+            
+            api.bind( 'status', function( status ) {
+                
+                log( '[status]', status );
+                
+            } );
+            
+            api.bind( 'error', function( reason ) {
+                
+                log( '[error]', reason );
+                
+            } );
+            
+            api.bind( 'progress', function( percent ) {
+                
+                log( '[progress]', percent );
+                
+            } );
+            
+        }
+        
+        function start() {
+        
+            if ( file && apiKey ) {
+
+                api.storeFile( file, {
+                    "apiKey": apiKey
+                } );
+
+            } else {
+
+                var errors = [];
+
+                if ( !file )
+                    log( "[demo error]", "Please first browse for a file!" );
+
+                if ( !apiKey )
+                    log( "[demo error]", "Please provide an api key!" );
+
+            }
+        }
+        
+    </script>
+    
+    <style>
+    
+        #key {
+            width: 310px;
+        }
+    
+        #status {
+            
+            width: 400px;
+            height: 200px;
+            
+        }
+    </style>
+
+</head>
+<body onload="initialize();">
+    <h3>Transcoding cloud api demo</h3>
+    <br />
+    Browse for a file: <input type="file" id="file" /><br />
+    <br />
+    Input api key: <input type="text" id="key" value="a33879cd32bdd32c0cf97921a6e3dfb0" /><br />
+    <br />
+    <button id="go">Upload file</button>
+    <br />
+    <br />
+    <textarea id="status" 
+        disabled="disabled"></textarea>
+</body>
+</html>
