@@ -49,41 +49,41 @@ require( __dirname + '/lib/npm-utils.js' ).ensure_runtime( function( err ) {
 
         if ( memoryLimitPerWorker >= 0 ) {
             
-            console.log( "SERVER.memory_limit_per_cluster_node : ", memoryLimitPerWorker );
+            console.log( "* Main: SERVER.memory_limit_per_cluster_node : ", btostr( memoryLimitPerWorker ) );
             
         }
 
         for ( var i=0; i<conf.workers; i++ )
             cluster.fork().on( 'disconnect', function() {
-                console.log( "MASTER: A slave process was disconnected. Respawning another slave..." );
+                console.log( "* Main: MASTER: A slave process was disconnected. Respawning another slave..." );
                 cluster.fork();
             });
 
         cluster.on('exit', function( worker, code, signal ) {
             if ( worker.suicide === true ) {
                 
-                console.log("MASTER: slave process pid=" + worker.process.pid + " exited by it's will..." );
+                console.log("* Main: MASTER: slave process pid=" + worker.process.pid + " exited by it's will..." );
                 cluster.fork();
                 
             } else {
                 if ( code != 0 ) {
-                    console.log("MASTER: slave process " + worker.process.pid + " terminated with non-zero error code: " + code + ". Server will halt!" );
+                    console.log("* Main: MASTER: slave process " + worker.process.pid + " terminated with non-zero error code: " + code + ". Server will halt!" );
                     process.exit( 1 );
                 } else cluster.fork();
             }
         });
         
-        console.log( "HTTP" + (conf.https ? "S" : "" ) +".workers", conf.workers );
+        console.log( "* Main: HTTP" + (conf.https ? "S" : "" ) +".workers", conf.workers );
         // console.log( "HTTP" + (conf.https ? "S" : "" ) +".allowFom\n*", ( conf.allowFrom || [ 'none (port is still used though)' ] ).join( "\n* " ) );
-        console.log( "HTTP" + (conf.https ? "S" : "" ) +".documentRoot", conf.documentRoot + "/" );
-        console.log( "HTTP" + (conf.https ? "S" : "" ) +".port", conf.port );
-        console.log( "HTTP" + (conf.https ? "S" : "" ) +".interface", listen );
-        console.log( "URL.rewriteConditions", rewriteRules.length );
+        console.log( "* Main: HTTP" + (conf.https ? "S" : "" ) +".documentRoot", conf.documentRoot + "/" );
+        console.log( "* Main: HTTP" + (conf.https ? "S" : "" ) +".port", conf.port );
+        console.log( "* Main: HTTP" + (conf.https ? "S" : "" ) +".interface", listen );
+        console.log( "* Main: URL.rewriteConditions", rewriteRules.length );
 
         if ( conf.modules && conf.modules.length ) {
             
             for ( var i=0,len=conf.modules.length; i<len; i++ ) {
-                console.log("SERVER.module", conf.modules[i] );
+                console.log("* Main: SERVER.module", conf.modules[i] );
                 try {
                     
                     if ( fs.lstatSync( './modules/' + conf.modules[i] + '.js' ).isFile() ) {
@@ -95,7 +95,7 @@ require( __dirname + '/lib/npm-utils.js' ).ensure_runtime( function( err ) {
                             
                                 if ( typeof mod.start == 'function' ) {
                                     
-                                    console.log( "configuring module: ", conf.modules[i] );
+                                    console.log( "* Main: configuring module: ", conf.modules[i] );
                                     
                                     mod.start( conf );
                                     
@@ -125,15 +125,15 @@ require( __dirname + '/lib/npm-utils.js' ).ensure_runtime( function( err ) {
                 var mem = process.memoryUsage();
                 
                 if ( mem.rss > memoryLimitPerWorker ) {
-                    console.log( "Process #" + process.pid + " allocated more memory than it is allowed ( with " + btostr( memoryLimitPerWorker - mem.rss ) + " )." );
-                    console.log( "The process will now exit, and the master process will respawn another worker..." );
+                    console.log( "* Main: Process #" + process.pid + " allocated more memory than it is allowed ( with " + btostr( memoryLimitPerWorker - mem.rss ) + " )." );
+                    console.log( "        The process will now exit, and the master process will respawn another worker..." );
                     process.disconnect();
                 } else {
                     
                     var free = parseFloat( ( ( memoryLimitPerWorker - mem.rss ) / ( 1024 * 1024 ) ).toFixed(2) );
                     
                     if ( free < 16 )
-                        console.log( "WARNING: " + btostr( free ) + " ram free. The slave will restart soon!" );
+                        console.log( "* Main: WARNING: " + btostr( free ) + " ram free. The slave will restart soon!" );
                 }
                 
             }, 5000 ).unref();
@@ -143,7 +143,7 @@ require( __dirname + '/lib/npm-utils.js' ).ensure_runtime( function( err ) {
             
             for ( var i=0,len=conf.modules.length; i<len; i++ ) {
     
-                console.log("SERVER.upgrade module", conf.modules[i] );
+                console.log("* Main: SERVER.upgrade module", conf.modules[i] );
 
                 try {
                     
@@ -156,7 +156,7 @@ require( __dirname + '/lib/npm-utils.js' ).ensure_runtime( function( err ) {
                             
                                 if ( typeof mod.upgrade == 'function' ) {
                                 
-                                    console.log( "configuring server upgrade module: ", conf.modules[i] );
+                                    console.log( "* Main: configuring server upgrade module: ", conf.modules[i] );
                                 
                                     if ( connectionUpgradeFunc !== null )
                                         throw "Loading module: Cannot use more than 1 server upgrade module!";
@@ -165,7 +165,7 @@ require( __dirname + '/lib/npm-utils.js' ).ensure_runtime( function( err ) {
 
                                     if ( mod.symbiosis ) {
                             
-                                        console.log( "Module " + conf.modules[i] + " upgraded server in symbiosis mode" );
+                                        console.log( "* Main: Module " + conf.modules[i] + " upgraded server in symbiosis mode" );
                                         connectionUpgradeSymbiosis = true;
                             
                                     }
@@ -345,7 +345,7 @@ require( __dirname + '/lib/npm-utils.js' ).ensure_runtime( function( err ) {
 
         if (!conf.https ) {
     
-            console.log("Creating a HTTP server (port=" + conf.port +")");
+            console.log("* Main: Creating a HTTP server (port=" + conf.port +")");
     
             ( server = require('http').createServer(serverHandlerFunc) ).listen( conf.port, listen );
         
@@ -353,7 +353,7 @@ require( __dirname + '/lib/npm-utils.js' ).ensure_runtime( function( err ) {
         
             ( function() {      
 
-                console.log("Creating a HTTPS server");
+                console.log("* Main: Creating a HTTPS server");
         
                 var privateKey = fs.readFileSync('ssl/privatekey.pem').toString();
                 var certificate = fs.readFileSync('ssl/certificate.pem').toString();    
@@ -385,11 +385,11 @@ require( __dirname + '/lib/npm-utils.js' ).ensure_runtime( function( err ) {
         } );
         
         if ( connectionUpgradeFunc !== null ) {
-            console.log("Upgrading server...");
+            console.log("* Main: Upgrading server...");
             connectionUpgradeFunc( server );
         }
         
         if ( controller !== null )
-            console.log("One of the module has a master request controller");
+            console.log("* Main: One of the module has a master request controller");
     }
 });

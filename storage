@@ -16,4 +16,5 @@ nodejs main.js \
     -data-dir /srv/www/websites/transcoder/htdocs/.storage \
     -www "http://storage01:80/" \
     -memory-limit 512MB \
-    -quota-limit 100G
+    -quota-limit 100G \
+    -free-space-warn-level "10%"
