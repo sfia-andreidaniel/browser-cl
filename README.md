@@ -71,5 +71,6 @@
 <p>The following connectivity to the could is supported:</p>
 <ul>
     <li><b>PHP</b> driver</li>
-    <li><b>JavaScript</b> driver</li>
+    <li><b>JavaScript</b> driver ( for browser )</li>
+    <li>TODO: <b>JavaScript</b> driver ( for nodejs )</li>
 </ul>
