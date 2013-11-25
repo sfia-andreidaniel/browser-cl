@@ -6,6 +6,7 @@ if ( !cluster.isMaster ) {
     if ( !args.data_dir ) {
         console.log( "Warning: Using default api data-dir: " + ( dataDir = __dirname + "/htdocs/.worker" ) );
     } else {
+        dataDir = args.data_dir;
         // console.log( "* Storage.dataDir: " + ( dataDir = args.data_dir ) );
     }
 
