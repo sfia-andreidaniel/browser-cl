@@ -4,7 +4,7 @@ exports.preset = function( transcoder ) {
     transcoder.addParams(
         {
             "method": "resize",
-            "args": [ 32, 32 ]
+            "args": [ 64, 64 ]
         }
     );
 }
