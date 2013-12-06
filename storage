@@ -13,7 +13,7 @@ nodejs main.js \
     -listen $STORAGE_ETH \
     -api-address $API_ETH:$API_PORT \
     -port $STORAGE_PORT \
-    -data-dir /srv/www/websites/browser-fs/htdocs/.storage \
+    -data-dir /srv/www/websites/browser-cl/htdocs/.storage \
     -www "http://storage01:80/" \
     -memory-limit 512MB \
     -quota-limit 100G \
