@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "installing: realpath autoconf automake build-essential checkinstall git libtool pkg-config texi2html python nodejs curl wget"
+echo "installing: realpath autoconf automake build-essential checkinstall git libtool pkg-config texi2html python curl wget"
 
 apt-get install -y \
   realpath \

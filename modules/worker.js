@@ -1,3 +1,5 @@
+global.NO_DATABASE_CONNECTION = true; // tell the lib/registry.js to skip connecting to mysql database.
+
 var cluster     = require('cluster'),
     args        = require( __dirname + '/../lib/argv-utils.js' ).customArgs,
     dataDir     = null;
