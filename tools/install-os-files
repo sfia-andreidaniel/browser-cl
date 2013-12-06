@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "installing: realpath autoconf automake build-essential checkinstall git libtool pkg-config texi2html python curl wget"
+echo "installing: realpath autoconf automake build-essential checkinstall git libtool pkg-config texi2html python curl wget graphicsmagick"
 
 apt-get install -y \
   realpath \
@@ -13,9 +13,9 @@ apt-get install -y \
   pkg-config \
   texi2html \
   python \
-  nodejs \
   curl \
   wget \
+  graphicsmagick \
   sendmail > /dev/null 2>&1
 
 echo "installation completed"
