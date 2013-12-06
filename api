@@ -9,6 +9,6 @@ nodejs main.js \
      -listen $API_ETH \
      -port $API_PORT \
      -module api \
-     -data-dir /srv/www/websites/transcoder/htdocs/.api \
+     -data-dir /srv/www/websites/browser-fs/htdocs/.api \
      -memory-limit 512MB \
      -max-connections 1
